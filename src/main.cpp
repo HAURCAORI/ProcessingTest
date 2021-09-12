@@ -2,17 +2,15 @@
 #include <stdio.h>
 #include "main.h"
 
-
 int main()
 {
-    printf("abcdefg");
-    return 0;
     /*
 	FILE* pFile = fopen("resource/sample.jpg", "r"); //read mode 
     if(pFile == NULL)
     {
         printf("파일이 없습니다. 프로그램을 종료합니다.");
         return 0;
+
     }
 	
 	char str[50];
@@ -21,6 +19,6 @@ int main()
     fclose(pFile);          //파일 닫기
     printf("%s\n", str);    //터미널에 출력
 
+*/
 	return 0;
-    */
 }
