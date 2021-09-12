@@ -5,6 +5,9 @@ using namespace std;
 
 int main()
 {
+    printf("abc");
+    return 0;
+    /*
 	FILE* pFile = fopen("resource/sample.jpg", "r"); //read mode 
     if(pFile == NULL)
     {
@@ -19,4 +22,5 @@ int main()
     printf("%s\n", str);    //터미널에 출력
 
 	return 0;
+    */
 }
