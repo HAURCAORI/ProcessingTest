@@ -5,7 +5,7 @@ using namespace std;
 
 int main()
 {
-    printf("abc");
+    printf("abcde");
     return 0;
     /*
 	FILE* pFile = fopen("resource/sample.jpg", "r"); //read mode 
