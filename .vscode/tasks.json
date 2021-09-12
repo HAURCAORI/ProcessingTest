@@ -15,6 +15,15 @@
             }
         },
         {
+            "label": "Commit",
+            "type": "shell",
+            "command": "git ",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
             "label": "excute",
             "type": "shell",
             "command": "${workspaceFolder}/bin/main",
