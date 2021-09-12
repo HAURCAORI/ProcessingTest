@@ -18,6 +18,7 @@
             "label": "Commit",
             "type": "shell",
             "command": "git add .; git commit -m vscode;git push origin main;",
+            "problemMatcher": [],
             "group": {
                 "kind": "build",
                 "isDefault": true
@@ -27,7 +28,8 @@
             "label": "excute",
             "type": "shell",
             "command": "${workspaceFolder}/bin/main",
-            "group": "test"
+            "problemMatcher": [],
+            "group": "build"
         }
     ]
 }

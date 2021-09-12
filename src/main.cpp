@@ -4,6 +4,7 @@
 
 int main()
 {
+    cout << "HelloWorld" << endl;
     /*
 	FILE* pFile = fopen("resource/sample.jpg", "r"); //read mode 
     if(pFile == NULL)
