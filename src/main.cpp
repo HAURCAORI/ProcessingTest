@@ -1,11 +1,12 @@
 #include <iostream>
 #include <stdio.h>
+#include "main.h"
 
 using namespace std;
 
 int main()
 {
-    printf("abcde");
+    printf("abcdefg");
     return 0;
     /*
 	FILE* pFile = fopen("resource/sample.jpg", "r"); //read mode 
