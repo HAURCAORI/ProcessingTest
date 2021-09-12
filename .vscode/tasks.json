@@ -1,0 +1,24 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "runner": "terminal",
+    "tasks": [
+        {
+            "label": "c++ build",
+            "type": "shell",
+            "command": "make",
+            "problemMatcher": ["$gcc"],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "excute",
+            "type": "shell",
+            "command": "${workspaceFolder}/bin/main",
+            "group": "test"
+        }
+    ]
+}
