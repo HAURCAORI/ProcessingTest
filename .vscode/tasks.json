@@ -17,7 +17,7 @@
         {
             "label": "Commit",
             "type": "shell",
-            "command": "git add .; git commit -m vscode;git push origin main;haurcaori",
+            "command": "git add .; git commit -m vscode;git push origin main;",
             "group": {
                 "kind": "build",
                 "isDefault": true
