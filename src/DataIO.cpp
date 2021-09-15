@@ -20,7 +20,7 @@ void CreateEmptyFile(PAGE page)
 
 void LoadFile(PAGE page)
 {
-    
+
 }
 
 bool isLoaded(PAGE page)
