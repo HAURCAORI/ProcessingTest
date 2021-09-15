@@ -1,5 +1,5 @@
 #pragma once
-
+#include <stdio.h>
 #define SectorCount 65536
 
 typedef unsigned char BYTE;
@@ -38,4 +38,10 @@ struct ActiveNeuron
     COUNT count;
     BYTE flag;
     float value;
+};
+
+struct PageFile
+{
+    FILE *stream;
+    PAGE page;
 };
