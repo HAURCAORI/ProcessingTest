@@ -139,4 +139,8 @@ obj/DataIO.o: src/DataIO.cpp /usr/include/stdc-predef.h \
  /usr/include/c++/7/bits/stl_construct.h \
  /usr/include/c++/7/bits/stl_uninitialized.h \
  /usr/include/c++/7/bits/stl_vector.h \
- /usr/include/c++/7/bits/stl_bvector.h /usr/include/c++/7/bits/vector.tcc
+ /usr/include/c++/7/bits/stl_bvector.h /usr/include/c++/7/bits/vector.tcc \
+ /usr/include/c++/7/fstream /usr/include/c++/7/bits/codecvt.h \
+ /usr/include/x86_64-linux-gnu/c++/7/bits/basic_file.h \
+ /usr/include/x86_64-linux-gnu/c++/7/bits/c++io.h \
+ /usr/include/c++/7/bits/fstream.tcc

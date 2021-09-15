@@ -1,8 +1,10 @@
 #include "main.h"
 #include "Calculate.h"
+#include "DataProcess.h"
 
 int main()
 {
+    CreateEmptyFile(0);
     cout << "HelloWorld" << endl;
     /*
 	FILE* pFile = fopen("resource/sample.jpg", "r"); //read mode 

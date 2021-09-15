@@ -1,6 +1,8 @@
 #pragma once
 #include <stdio.h>
+#define SectorSize 1024 //KB
 #define SectorCount 65536
+#define Path "resource/"
 
 typedef unsigned char BYTE;
 typedef unsigned char NUMBER;
