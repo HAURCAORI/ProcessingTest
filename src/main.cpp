@@ -4,10 +4,17 @@
 
 int main()
 {
-    LoadFile(0);
-    LoadFile(1);
-    //CreateEmptyFile(0);
-    cout << isLoaded(0) << endl;
+    /*
+    for(int i = 0; i < 100; i++)
+    {
+        LoadFile(i);
+        cout << getPage(i)->page << endl;
+    }
+    */
+    //CreateEmptyFile(0);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
+
+    cout << "Hello" << endl;
+
     /*
 	FILE* pFile = fopen("resource/sample.jpg", "r"); //read mode 
     if(pFile == NULL)

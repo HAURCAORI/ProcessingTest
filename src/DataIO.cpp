@@ -18,15 +18,21 @@ void CreateEmptyFile(const PAGE page)
 	}
 }
 
-void LoadFile(const PAGE page)
+bool LoadFile(const PAGE page)
 {
-	string address = (string)Path + "0";
-	FILE *stream = fopen(address.c_str(), "r");
-	if(!stream) {
-		return;
-    }
-	PageFile pf = {stream,page, clock()};
-	pfile.push_back(pf);
+	if(!isLoaded(page))
+	{	
+		string address = (string)Path + "0";
+		FILE *stream = fopen(address.c_str(), "r");
+		if(!stream) {
+			return false;
+		}
+		PageFile pf = {stream,page, clock()};
+		pfile.push_back(pf);
+		return true;
+	}
+	else
+		return true;
 }
 
 bool UnloadFile(const PAGE page)
@@ -45,11 +51,25 @@ bool UnloadFile(const PAGE page)
 
 bool isLoaded(const PAGE page)
 {
-    for (vector<PageFile>::size_type i = 0; i < pfile.size();) {
+    for (vector<PageFile>::size_type i = 0; i < pfile.size();i++) {
         if (pfile[i].page == page)
 		{
             return true;
 		}
     }
 	return false;
+}
+
+PageFile* getPage(const PAGE page)
+{
+	for (vector<PageFile>::size_type i = 0; i < pfile.size();i++) {
+        if (pfile[i].page == page)
+		{
+            return &pfile[i];
+		}
+    }
+	if(LoadFile(page))
+		return &pfile[pfile.size()];
+	else
+		return NULL;
 }
