@@ -46,4 +46,5 @@ struct PageFile
 {
     FILE *stream;
     PAGE page;
+    TIMESTAMP timestamp;
 };

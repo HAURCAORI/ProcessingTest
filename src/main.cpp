@@ -4,8 +4,10 @@
 
 int main()
 {
-    CreateEmptyFile(0);
-    cout << "HelloWorld" << endl;
+    LoadFile(0);
+    LoadFile(1);
+    //CreateEmptyFile(0);
+    cout << isLoaded(0) << endl;
     /*
 	FILE* pFile = fopen("resource/sample.jpg", "r"); //read mode 
     if(pFile == NULL)
