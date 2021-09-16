@@ -11,7 +11,7 @@ int main()
         cout << getPage(i)->page << endl;
     }
     */
-    //CreateEmptyFile(0);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
+    //CreateEmptyFile(0);
 
     cout << "Hello" << endl;
 

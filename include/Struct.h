@@ -2,6 +2,7 @@
 #include <stdio.h>
 #define SectorSize 1024 //KB
 #define SectorCount 65536
+#define NeuronHeaderSize 4 //BYTE
 #define Path "resource/"
 
 typedef unsigned char BYTE;
@@ -15,7 +16,7 @@ typedef char ADDRESS;
 
 struct Signal
 {
-    BYTE header;
+    BYTE type;
     float value;
     COUNT count;
 };
@@ -24,12 +25,15 @@ struct Neuron
 {
     PAGE page;
     SECTOR sector;
-    BYTE header;
+    //Header
+    BYTE type;
     NUMBER priority;
-    NUMBER size;
+    NUMBER size; //except Header
     BYTE extra;
+    //Value
     float threshold;
     float weight;
+    //Address
     ADDRESS address[0]; //flexible array member
 };
 
