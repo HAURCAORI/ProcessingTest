@@ -13,7 +13,7 @@ int main()
     */
     //CreateEmptyFile(0);
 
-    cout << "Hello" << endl;
+    cout << "HelloWorld" << endl;
 
     /*
 	FILE* pFile = fopen("resource/sample.jpg", "r"); //read mode 
