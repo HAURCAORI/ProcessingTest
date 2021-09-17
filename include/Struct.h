@@ -1,11 +1,16 @@
 #pragma once
 #include <stdio.h>
-#define SectorSize 1024 //KB
 #define SectorCount 65536
+#define SectorSize 1024 //KB
+#define SectorUnit 16 //BYTE
+// (SectorSize) = (SectorCount)*(SectorUnit)
+#define ReadingUnit 4
 #define NeuronHeaderSize 4 //BYTE
+#define NeuronValueSize 12 //BYTE
 #define Path "resource/"
 
 typedef unsigned char BYTE;
+typedef unsigned char BIT;
 typedef unsigned char NUMBER;
 typedef unsigned short COUNT;
 typedef float TIMESTAMP;

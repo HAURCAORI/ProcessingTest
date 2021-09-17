@@ -27,7 +27,7 @@ bool LoadFile(const PAGE page)
 		if(!stream) {
 			return false;
 		}
-		PageFile pf = {stream,page, clock()};
+		PageFile pf = {stream,page, (float) clock()};
 		pfile.push_back(pf);
 		return true;
 	}
@@ -40,6 +40,7 @@ bool UnloadFile(const PAGE page)
 	for (vector<PageFile>::size_type i = 0; i < pfile.size();) {
         if (pfile[i].page == page)
 		{
+			fclose(pfile[i].stream);
 			pfile.erase(pfile.begin() + i);
             return true;
 		}else{
@@ -72,4 +73,20 @@ PageFile* getPage(const PAGE page)
 		return &pfile[pfile.size()];
 	else
 		return NULL;
+}
+
+void SpecificDataRead(PAGE page, SECTOR sector)
+{
+	string address = (string)Path + "0";
+	FILE *stream = fopen(address.c_str(), "r");
+	if(stream) {
+		fseek(stream, SectorUnit*sector, SEEK_SET);
+		BYTE byte;
+		for(int i = 0; i < SectorUnit; i ++)
+		{
+			fread(&byte, sizeof(BYTE), 1, stream);
+			cout << getByteString(byte) << "/";
+		}
+		fclose(stream);
+	}
 }

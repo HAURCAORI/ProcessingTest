@@ -4,17 +4,7 @@
 
 int main()
 {
-    /*
-    for(int i = 0; i < 100; i++)
-    {
-        LoadFile(i);
-        cout << getPage(i)->page << endl;
-    }
-    */
-    //CreateEmptyFile(0);
-
-    cout << "HelloWorld" << endl;
-
+    SpecificDataRead(0,0);
     /*
 	FILE* pFile = fopen("resource/sample.jpg", "r"); //read mode 
     if(pFile == NULL)
