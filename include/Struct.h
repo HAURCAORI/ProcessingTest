@@ -17,11 +17,12 @@ typedef float TIMESTAMP;
 
 typedef unsigned short PAGE;
 typedef unsigned short SECTOR;
-typedef char ADDRESS;
+typedef unsigned short BYTES;
+//typedef char ADDRESS;
 
 struct Signal
 {
-    BYTE type;
+    BYTE property;
     float value;
     COUNT count;
 };
@@ -40,7 +41,7 @@ struct Neuron
     float weight;
     float temp;
     //Address
-    ADDRESS address[0]; //flexible array member
+    BYTES address[0]; //flexible array member
 };
 
 struct ActiveNeuron

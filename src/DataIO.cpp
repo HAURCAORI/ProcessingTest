@@ -120,7 +120,7 @@ bool InsertDataHeader(PAGE page, SECTOR sector, BYTE type)
 BYTE TypeGen(bool isValide, bool isTerminus)
 {
 	BYTE byte;
-	byte |= isValide; //데이터에 Neuron이 할당되면 true값으로
+	byte = isValide; //데이터에 Neuron이 할당되면 true값으로
 	byte <<= 1;
 	byte |= isTerminus; //true일 경우 address자리를 명령으로 처리
 	byte <<= 6;
@@ -130,9 +130,20 @@ BYTE TypeGen(bool isValide, bool isTerminus)
 BYTE TypeDefault()
 {
 	BYTE byte;
-	byte |= 1;
+	byte = 1;
 	byte <<= 1;
 	byte |= 0;
 	byte <<= 6;
+	return byte;
+}
+
+Signal SignalGen(float value)
+{
+	Signal s = {PropertyGen(),value,0};
+}
+
+BYTE PropertyGen()
+{
+	BYTE byte = 0;
 	return byte;
 }

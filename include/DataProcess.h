@@ -15,5 +15,7 @@ bool isLoaded(const PAGE page);
 PageFile* getPage(const PAGE page);
 void SpecificDataRead(PAGE page, SECTOR sector);
 bool InsertDataHeader(PAGE page, SECTOR sector, BYTE type);
+
 BYTE TypeGen(bool isValide, bool isTerminus);
 BYTE TypeDefault();
+BYTE PropertyGen();
