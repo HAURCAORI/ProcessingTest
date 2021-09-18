@@ -38,6 +38,7 @@ struct Neuron
     //Value
     float threshold;
     float weight;
+    float temp;
     //Address
     ADDRESS address[0]; //flexible array member
 };

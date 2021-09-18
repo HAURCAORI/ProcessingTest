@@ -4,6 +4,8 @@
 
 int main()
 {
+    cout << InsertDataHeader(0,0,TypeDefault()) << endl;
+
     SpecificDataRead(0,0);
     /*
 	FILE* pFile = fopen("resource/sample.jpg", "r"); //read mode 

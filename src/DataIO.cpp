@@ -90,3 +90,49 @@ void SpecificDataRead(PAGE page, SECTOR sector)
 		fclose(stream);
 	}
 }
+
+bool InsertDataHeader(PAGE page, SECTOR sector, BYTE type)
+{
+	NUMBER empty = 0;
+	NUMBER size = 16;
+
+	string address = (string)Path + "0";
+	FILE *stream = fopen(address.c_str(), "w");
+	if(stream) {
+		fseek(stream, SectorUnit*sector, SEEK_SET);
+		fwrite(&type, 1, 1, stream); //type
+		fwrite(&empty, 1, 1, stream);//priority
+		fwrite(&size, 1, 1, stream);//size
+		fwrite(&empty, 1, 1, stream);//extra
+		float threshold = random_threshold();
+		fwrite(&threshold, sizeof(float), 1, stream);
+		float weight = random_weight();
+		fwrite(&weight, sizeof(float), 1, stream);
+		float temp = 0;
+		fwrite(&temp, sizeof(float), 1, stream);
+		fclose(stream);
+		return true;
+	}else{
+		return false;
+	}
+}
+
+BYTE TypeGen(bool isValide, bool isTerminus)
+{
+	BYTE byte;
+	byte |= isValide; //데이터에 Neuron이 할당되면 true값으로
+	byte <<= 1;
+	byte |= isTerminus; //true일 경우 address자리를 명령으로 처리
+	byte <<= 6;
+	return byte;
+}
+
+BYTE TypeDefault()
+{
+	BYTE byte;
+	byte |= 1;
+	byte <<= 1;
+	byte |= 0;
+	byte <<= 6;
+	return byte;
+}
