@@ -33,8 +33,8 @@ struct Neuron
     SECTOR sector;
     //Header
     BYTE type;
+    NUMBER count;// equals to address count(except Header) [per 2bytes]
     NUMBER priority;
-    NUMBER size; //except Header
     BYTE extra;
     //Value
     float threshold;

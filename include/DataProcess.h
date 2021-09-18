@@ -18,4 +18,9 @@ bool InsertDataHeader(PAGE page, SECTOR sector, BYTE type);
 
 BYTE TypeGen(bool isValide, bool isTerminus);
 BYTE TypeDefault();
+Signal SignalGen(float value);
 BYTE PropertyGen();
+
+
+//함수 처리부 (Process)
+bool Load(PAGE page, SECTOR sector, Signal signal);

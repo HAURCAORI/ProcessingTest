@@ -4,7 +4,9 @@
 
 int main()
 {
-    cout << InsertDataHeader(0,0,TypeDefault()) << endl;
+    //InsertDataHeader(0,0,TypeDefault())
+    Signal s = SignalGen(1.0);
+    cout << Load(0,0,s) << endl;
 
     SpecificDataRead(0,0);
     /*

@@ -70,7 +70,7 @@ PageFile* getPage(const PAGE page)
 		}
     }
 	if(LoadFile(page))
-		return &pfile[pfile.size()];
+		return &pfile[pfile.size()-1];
 	else
 		return NULL;
 }
@@ -94,15 +94,15 @@ void SpecificDataRead(PAGE page, SECTOR sector)
 bool InsertDataHeader(PAGE page, SECTOR sector, BYTE type)
 {
 	NUMBER empty = 0;
-	NUMBER size = 16;
+	NUMBER count = 0;
 
 	string address = (string)Path + "0";
 	FILE *stream = fopen(address.c_str(), "w");
 	if(stream) {
 		fseek(stream, SectorUnit*sector, SEEK_SET);
 		fwrite(&type, 1, 1, stream); //type
+		fwrite(&count, 1, 1, stream);//size
 		fwrite(&empty, 1, 1, stream);//priority
-		fwrite(&size, 1, 1, stream);//size
 		fwrite(&empty, 1, 1, stream);//extra
 		float threshold = random_threshold();
 		fwrite(&threshold, sizeof(float), 1, stream);
@@ -139,7 +139,8 @@ BYTE TypeDefault()
 
 Signal SignalGen(float value)
 {
-	Signal s = {PropertyGen(),value,0};
+	Signal signal = {PropertyGen(),value,0};
+	return signal;
 }
 
 BYTE PropertyGen()
