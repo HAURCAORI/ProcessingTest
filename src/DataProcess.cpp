@@ -24,8 +24,7 @@ bool Load(PAGE page, SECTOR sector, Signal signal)
             fread(&neuron->weight, sizeof(float), 1, stream);
             fread(&neuron->temp, sizeof(float), 1, stream);
             
-            //해결 과제 : signal 계산
-
+            
             if(tsize > 0)
             {
                 BYTES bytes[tsize];

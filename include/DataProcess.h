@@ -15,7 +15,10 @@ bool isLoaded(const PAGE page);
 PageFile* getPage(const PAGE page);
 void SpecificDataRead(PAGE page, SECTOR sector);
 bool InsertDataHeader(PAGE page, SECTOR sector, BYTE type);
+bool InsertAddress(PAGE page, SECTOR sector, int offset, BYTES value);
+bool ClearData(PAGE page, SECTOR sector);
 
+bool isAvailableAddress(FILE *stream);
 BYTE TypeGen(bool isValide, bool isTerminus);
 BYTE TypeDefault();
 Signal SignalGen(float value);

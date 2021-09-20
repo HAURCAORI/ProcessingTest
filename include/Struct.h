@@ -35,7 +35,7 @@ struct Neuron
     BYTE type;
     NUMBER count;// equals to address count(except Header) [per 2bytes]
     NUMBER priority;
-    BYTE extra;
+    NUMBER extra; 
     //Value
     float threshold;
     float weight;

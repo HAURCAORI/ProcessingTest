@@ -23,7 +23,7 @@ bool LoadFile(const PAGE page)
 	if(!isLoaded(page))
 	{	
 		string address = (string)Path + "0";
-		FILE *stream = fopen(address.c_str(), "r");
+		FILE *stream = fopen(address.c_str(), "r+");
 		if(!stream) {
 			return false;
 		}
@@ -78,7 +78,7 @@ PageFile* getPage(const PAGE page)
 void SpecificDataRead(PAGE page, SECTOR sector)
 {
 	string address = (string)Path + "0";
-	FILE *stream = fopen(address.c_str(), "r");
+	FILE *stream = fopen(address.c_str(), "r+");
 	if(stream) {
 		fseek(stream, SectorUnit*sector, SEEK_SET);
 		BYTE byte;
@@ -97,7 +97,7 @@ bool InsertDataHeader(PAGE page, SECTOR sector, BYTE type)
 	NUMBER count = 0;
 
 	string address = (string)Path + "0";
-	FILE *stream = fopen(address.c_str(), "w");
+	FILE *stream = fopen(address.c_str(), "r+");
 	if(stream) {
 		fseek(stream, SectorUnit*sector, SEEK_SET);
 		fwrite(&type, 1, 1, stream); //type
@@ -113,6 +113,74 @@ bool InsertDataHeader(PAGE page, SECTOR sector, BYTE type)
 		fclose(stream);
 		return true;
 	}else{
+		return false;
+	}
+}
+
+bool InsertAddress(PAGE page, SECTOR sector, int offset, BYTES value)
+{
+	string address = (string)Path + "0";
+	FILE *stream = fopen(address.c_str(), "r+");
+	if(stream) {
+		fseek(stream, SectorUnit*sector + offset, SEEK_SET);
+
+		if(isAvailableAddress(stream))
+		{
+			fwrite(&value, sizeof(BYTES), 1, stream);
+			fclose(stream);
+			return true;
+		}else{
+			return false;
+		}
+	}else{
+		return false;
+	}
+}
+
+bool InsertAddressAuto(Neuron* neuron, FILE* stream, BYTES value)
+{
+	fseek(stream, SectorUnit*(neuron->sector) + 16 + (neuron->count)*2, SEEK_SET);
+
+	if(isAvailableAddress(stream))
+	{
+
+	}
+}
+
+bool ClearData(PAGE page, SECTOR sector)
+{
+	string address = (string)Path + "0";
+	FILE *stream = fopen(address.c_str(), "r+");
+	int empty = 0;
+	if(stream) {
+		fseek(stream, SectorUnit*sector, SEEK_SET);
+		fwrite(&empty, 4, 1, stream);
+		fwrite(&empty, 4, 1, stream);
+		fwrite(&empty, 4, 1, stream);
+		fwrite(&empty, 4, 1, stream);
+		fclose(stream);
+		return true;
+	}else{
+		return false;
+	}
+}
+
+bool isAvailableAddress(FILE *stream)
+{
+	BYTES previous;
+	fread(&previous, sizeof(BYTES), 1, stream);
+	if(previous == 0 || previous == 65535)
+	{
+		fread(&previous, sizeof(BYTES), 1, stream);
+		fseek(stream, -4L, SEEK_CUR);
+		if(previous == 0 || previous == 65535)	
+			return true;
+		else
+			return false;		
+	}
+	else
+	{
+		fseek(stream, -2L, SEEK_CUR);
 		return false;
 	}
 }
