@@ -8,10 +8,10 @@ int main()
     //InsertDataHeader(0,0,TypeDefault());
     //InsertDataHeader(0,1,TypeDefault());
     //InsertDataHeader(0,2,TypeDefault());
-    //Signal s = SignalGen(1.0);
-    //cout << Load(0,0,s) << endl;
-    ClearData(0,1);
-    cout << InsertAddress(0,1,0,65530) << endl;
+    Signal s = SignalGen(1.0);
+    cout << Load(0,0,s) << endl;
+    //ClearData(0,1);
+    //cout << InsertAddress(0,1,0,65530) << endl;
 
     SpecificDataRead(0,0);
     cout << "==" << endl;

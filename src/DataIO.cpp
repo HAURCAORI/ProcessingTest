@@ -143,7 +143,12 @@ bool InsertAddressAuto(Neuron* neuron, FILE* stream, BYTES value)
 
 	if(isAvailableAddress(stream))
 	{
-
+		fwrite(&value, sizeof(BYTES), 1, stream);
+		BYTES extra = USHORT_MAX;
+		fwrite(&extra, sizeof(BYTES), 1, stream);
+		++neuron->count;
+	}else{
+		return false; //주소 데이터 삽입 불가시 처리구문 추가
 	}
 }
 
@@ -169,11 +174,11 @@ bool isAvailableAddress(FILE *stream)
 {
 	BYTES previous;
 	fread(&previous, sizeof(BYTES), 1, stream);
-	if(previous == 0 || previous == 65535)
+	if(previous == 0 || previous == USHORT_MAX)
 	{
 		fread(&previous, sizeof(BYTES), 1, stream);
 		fseek(stream, -4L, SEEK_CUR);
-		if(previous == 0 || previous == 65535)	
+		if(previous == 0 || previous == USHORT_MAX)	
 			return true;
 		else
 			return false;		
@@ -183,6 +188,26 @@ bool isAvailableAddress(FILE *stream)
 		fseek(stream, -2L, SEEK_CUR);
 		return false;
 	}
+}
+
+NUMBER UpDownData(FILE *stream, bool increase)
+{
+	NUMBER count;
+	if(increase)
+	{
+		fread(&count, sizeof(NUMBER), 1, stream);
+		++count;
+		fseek(stream, -1L, SEEK_CUR);
+		fwrite(&count, sizeof(NUMBER), 1, stream);
+	}
+	else
+	{
+		fread(&count, sizeof(NUMBER), 1, stream);
+		--count;
+		fseek(stream, -1L, SEEK_CUR);
+		fwrite(&count, sizeof(NUMBER), 1, stream);
+	}
+	return count;
 }
 
 BYTE TypeGen(bool isValide, bool isTerminus)
