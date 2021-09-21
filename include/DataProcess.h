@@ -16,6 +16,7 @@ PageFile* getPage(const PAGE page);
 void SpecificDataRead(PAGE page, SECTOR sector);
 bool InsertDataHeader(PAGE page, SECTOR sector, BYTE type);
 bool InsertAddress(PAGE page, SECTOR sector, int offset, BYTES value);
+bool InsertAddressAuto(Neuron* neuron, BYTES value);
 bool ClearData(PAGE page, SECTOR sector);
 NUMBER UpDownData(FILE *stream, bool increase);
 
@@ -32,4 +33,5 @@ bool UnloadProcess();
 void ShowProcess();
 bool UnloadNeuron(Neuron *neuron);
 
-void test();
+//Thread
+int Test();

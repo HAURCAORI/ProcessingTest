@@ -137,16 +137,18 @@ bool InsertAddress(PAGE page, SECTOR sector, int offset, BYTES value)
 	}
 }
 
-bool InsertAddressAuto(Neuron* neuron, FILE* stream, BYTES value)
+bool InsertAddressAuto(Neuron* neuron, BYTES value)
 {
-	fseek(stream, SectorUnit*(neuron->sector) + 16 + (neuron->count)*2, SEEK_SET);
+	fseek(neuron->stream, SectorUnit*(neuron->sector) + 16 + (neuron->count)*2, SEEK_SET);
 
-	if(isAvailableAddress(stream))
+	if(isAvailableAddress(neuron->stream))
 	{
-		fwrite(&value, sizeof(BYTES), 1, stream);
+		fwrite(&value, sizeof(BYTES), 1, neuron->stream);
 		BYTES extra = USHORT_MAX;
-		fwrite(&extra, sizeof(BYTES), 1, stream);
-		++neuron->count;
+		fwrite(&extra, sizeof(BYTES), 1, neuron->stream);
+		fseek(neuron->stream, SectorUnit*(neuron->sector) + 1, SEEK_SET);
+		UpDownData(neuron->stream, true);
+		return true;
 	}else{
 		return false; //주소 데이터 삽입 불가시 처리구문 추가
 	}
@@ -196,14 +198,14 @@ NUMBER UpDownData(FILE *stream, bool increase)
 	if(increase)
 	{
 		fread(&count, sizeof(NUMBER), 1, stream);
-		++count;
+		count++;
 		fseek(stream, -1L, SEEK_CUR);
 		fwrite(&count, sizeof(NUMBER), 1, stream);
 	}
 	else
 	{
 		fread(&count, sizeof(NUMBER), 1, stream);
-		--count;
+		count--;
 		fseek(stream, -1L, SEEK_CUR);
 		fwrite(&count, sizeof(NUMBER), 1, stream);
 	}

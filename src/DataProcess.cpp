@@ -29,8 +29,13 @@ bool Load(PAGE page, SECTOR sector, Signal signal)
             fread(&neuron->weight, sizeof(float), 1, stream);
             fread(&neuron->temp, sizeof(float), 1, stream);
             
+
+
             ActiveNeuron nactive = {neuron,(float) clock(),FlagGen()};
             list_neuron.push_back(nactive);
+
+            InsertAddressAuto(neuron, 2);
+
 
             if(tsize > 0)
             {
@@ -60,7 +65,7 @@ bool UnloadProcess()
 		}
 		else
 		{
-			iter++;
+			//iter++;
             break;
 		}
 	}
@@ -72,25 +77,6 @@ void ShowProcess()
 	for (; iter != list_neuron.end(); iter++)
 	{
 		cout<< iter->timestamp << " : " << iter->neuron->page << "|" << iter->neuron->sector << endl;
-	}
-}
-
-void test()
-{
-    vector<ActiveNeuron>::iterator iter = list_neuron.begin();
-	for (; iter != list_neuron.end(); )
-	{
-        cout << iter->neuron->sector << endl;
-		if (iter->neuron->sector == 1)
-		{
-			UnloadNeuron(iter->neuron);
-            free(iter->neuron);
-			iter = list_neuron.erase(iter);
-		}
-		else
-		{
-			iter++;
-		}
 	}
 }
 

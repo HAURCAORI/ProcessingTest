@@ -4,30 +4,33 @@
 
 int main()
 {
+    Test();
+    //ThreadTest();
     //CreateEmptyFile(0);
     //InsertDataHeader(0,0,TypeDefault());
     //InsertDataHeader(0,1,TypeDefault());
     //InsertDataHeader(0,2,TypeDefault());
-    InsertDataHeader(0,3,TypeDefault());
+    //InsertDataHeader(0,3,TypeDefault());
+
+/*
+
     Signal s = SignalGen(1.0);
     Load(0,0,s);
-    Load(0,1,s);
-    Load(0,2,s);
-    Load(0,3,s);
-    test();
+
     //ClearData(0,1);
     //cout << InsertAddress(0,1,0,65530) << endl;
-    ShowProcess();
-/*
+    //ShowProcess();
+    UnloadFile(0);
+
     SpecificDataRead(0,0);
     cout << "==" << endl;
     SpecificDataRead(0,1);
     cout << "==" << endl;
     SpecificDataRead(0,2);
+
 */
 
-
-    UnloadFile(0);
+    
     /*
 	FILE* pFile = fopen("resource/sample.jpg", "r"); //read mode 
     if(pFile == NULL)
