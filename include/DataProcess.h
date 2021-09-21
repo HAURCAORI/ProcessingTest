@@ -24,7 +24,12 @@ BYTE TypeGen(bool isValide, bool isTerminus);
 BYTE TypeDefault();
 Signal SignalGen(float value);
 BYTE PropertyGen();
-
+BYTE FlagGen();
 
 //함수 처리부 (Process)
 bool Load(PAGE page, SECTOR sector, Signal signal);
+bool UnloadProcess();
+void ShowProcess();
+bool UnloadNeuron(Neuron *neuron);
+
+void test();

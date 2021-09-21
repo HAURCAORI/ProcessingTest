@@ -52,11 +52,9 @@ struct Neuron
 
 struct ActiveNeuron
 {
-    struct Neuron neuron;
+    struct Neuron* neuron;
     TIMESTAMP timestamp;
-    COUNT count;
     BYTE flag;
-    float value;
 };
 
 struct PageFile

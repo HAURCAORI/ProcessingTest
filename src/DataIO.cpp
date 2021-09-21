@@ -241,3 +241,8 @@ BYTE PropertyGen()
 	BYTE byte = 0;
 	return byte;
 }
+
+BYTE FlagGen()
+{
+	return 0;
+}

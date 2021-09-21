@@ -8,16 +8,24 @@ int main()
     //InsertDataHeader(0,0,TypeDefault());
     //InsertDataHeader(0,1,TypeDefault());
     //InsertDataHeader(0,2,TypeDefault());
+    InsertDataHeader(0,3,TypeDefault());
     Signal s = SignalGen(1.0);
-    cout << Load(0,0,s) << endl;
+    Load(0,0,s);
+    Load(0,1,s);
+    Load(0,2,s);
+    Load(0,3,s);
+    test();
     //ClearData(0,1);
     //cout << InsertAddress(0,1,0,65530) << endl;
-
+    ShowProcess();
+/*
     SpecificDataRead(0,0);
     cout << "==" << endl;
     SpecificDataRead(0,1);
     cout << "==" << endl;
     SpecificDataRead(0,2);
+*/
+
 
     UnloadFile(0);
     /*
