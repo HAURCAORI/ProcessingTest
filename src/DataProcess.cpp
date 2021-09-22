@@ -7,27 +7,33 @@ float SuspendTime = 1000;
 bool Load(PAGE page, SECTOR sector, Signal signal)
 {
     FILE *stream = getPage(page)->stream;
-    fseek(stream, SectorUnit * sector, SEEK_SET);
+    long pos = SectorUnit * sector;
+
     BYTE ttype;
-    fread(&ttype, sizeof(BYTE), 1, stream);
-    
+    ffread(stream, pos, ttype);
     if(ttype>>7 & 1)
     {
         if(!(ttype >> 6 & 1))
         {
+            ++pos;
             NUMBER tsize;
-            fread(&tsize, sizeof(NUMBER), 1, stream);
+            ffread(stream, pos, tsize);
             struct Neuron* neuron = (Neuron*) malloc(sizeof(struct Neuron) + sizeof(BYTES)*tsize);
             neuron->stream = stream;
             neuron->page = page;
             neuron->sector = sector;
             neuron->type = ttype;
             neuron->count = tsize;
-            neuron->priority = UpDownData(stream, true);//fread(&neuron->priority, sizeof(NUMBER), 1, stream);
-            neuron->extra = UpDownData(stream, true);//extra 증가
-            fread(&neuron->threshold, sizeof(float), 1, stream);
-            fread(&neuron->weight, sizeof(float), 1, stream);
-            fread(&neuron->temp, sizeof(float), 1, stream);
+            ++pos;
+            neuron->priority = UpDownData(stream, pos, true);//fread(&neuron->priority, sizeof(NUMBER), 1, stream);
+            ++pos;
+            neuron->extra = UpDownData(stream, pos, true);//extra 증가
+            ++pos;
+            ffread(stream, pos, neuron->threshold);
+            pos += 4;
+            ffread(stream, pos, neuron->weight);
+            pos += 4;
+            ffread(stream, pos, neuron->temp);
             
 
 
@@ -40,15 +46,17 @@ bool Load(PAGE page, SECTOR sector, Signal signal)
             if(tsize > 0)
             {
                 BYTES bytes[tsize];
+                pos = SectorUnit*(neuron->sector) + 16;
                 for(int i = 0; i < tsize; i++)
                 {
-                    fread(&bytes[i], sizeof(BYTES), 1, stream);
+                    ffread(stream, pos, bytes[i]);
+                    pos += 2;
                 }
             }
             return true;
         }
     }
-    
+
     return false;
 }
 
@@ -69,6 +77,7 @@ bool UnloadProcess()
             break;
 		}
 	}
+    return true;
 }
 
 void ShowProcess()
@@ -83,16 +92,15 @@ void ShowProcess()
 bool UnloadNeuron(Neuron *neuron) //과제 : 모든 값들은 stream 내에서 즉시 수정하도록 선언할 것
 {
     FILE *stream = neuron->stream;
-    fseek(stream, SectorUnit * neuron->sector+3, SEEK_SET);
-    UpDownData(stream, false); //extra 감소
-    fseek(stream, 8L, SEEK_CUR); // threshold와 weight는 즉시 반영하므로 생략
+    long pos = SectorUnit * neuron->sector+3;
+    UpDownData(stream, pos, false); //extra 감소
+    pos += 8;
     float temp;
-    fread(&temp, sizeof(float), 1, stream);
+    ffread(stream, pos, temp);
     if(temp <= neuron->temp) //temp는 현재 뉴런의 temp보다 작거나 같은 경우 0으로 초기화(가장 활성도가 큰 값이 Unload되므로)
     {
         temp = 0;
-        fseek(stream, -4L, SEEK_CUR);
-        fwrite(&temp, sizeof(float), 1, stream);
+        ffwrite(stream, pos, temp);
     }
     free(stream);
 

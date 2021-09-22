@@ -96,22 +96,68 @@ std::future<typename std::result_of<F(Args...)>::type> ThreadPool::EnqueueJob(
 }  // namespace ThreadPool
 
 // 사용 예시
-int work(int t, int id) {
-  printf("%d start \n", id);
-  std::this_thread::sleep_for(std::chrono::seconds(t));
-  printf("%d end after %ds\n", id, t);
-  return t + id;
+BYTE readByte(FILE* stream, long& pos){
+  BYTE result;
+  fseek(stream,pos,SEEK_SET);
+  fread(&result, sizeof(BYTE), 1, stream);
+  return result;
+}
+BYTES readBytes(FILE* stream, long& pos){
+  BYTES result;
+  fseek(stream,pos,SEEK_SET);
+  fread(&result, sizeof(BYTES), 1, stream);
+  return result;
+}
+float readFloat(FILE* stream, long& pos){
+  float result;
+  fseek(stream,pos,SEEK_SET);
+  fread(&result, sizeof(float), 1, stream);
+  return result;
 }
 
-int Test() {
-  ThreadPool::ThreadPool pool(3);
+void writeByte(FILE* stream, long& pos, BYTE& sender){
+  fseek(stream,pos,SEEK_SET);
+  fwrite(&sender, sizeof(BYTE), 1, stream);
+}
+void writeBytes(FILE* stream, long& pos, BYTES& sender){
+  fseek(stream,pos,SEEK_SET);
+  fwrite(&sender, sizeof(BYTES), 1, stream);
+}
+void writeFloat(FILE* stream, long& pos, float& sender){
+  fseek(stream,pos,SEEK_SET);
+  fwrite(&sender, sizeof(float), 1, stream);
+}
 
-  std::vector<std::future<int>> futures;
-  for (int i = 0; i < 10; i++) {
-    futures.emplace_back(pool.EnqueueJob(work, i % 3 + 1, i));
-  }
-  for (auto& f : futures) {
-    printf("result : %d \n", f.get());
-  }
-  return 0;
+ThreadPool::ThreadPool pool(3);
+
+void ffread(FILE* stream, long& pos, BYTE& sender){
+  std::future<BYTE> future;
+  future = pool.EnqueueJob(readByte, stream, pos);
+  sender = future.get();
+}
+void ffread(FILE* stream, long& pos, BYTES& sender){
+  std::future<BYTES> future;
+  future = pool.EnqueueJob(readBytes, stream, pos);
+  sender = future.get();
+}
+void ffread(FILE* stream, long& pos, float& sender){
+  std::future<float> future;
+  future = pool.EnqueueJob(readFloat, stream, pos);
+  sender = future.get();
+}
+
+void ffwrite(FILE* stream, long& pos, BYTE& sender){
+  std::future<void> future;
+  future = pool.EnqueueJob(writeByte, stream, pos, sender);
+  future.wait();
+}
+void ffwrite(FILE* stream, long& pos, BYTES& sender){
+  std::future<void> future;
+  future = pool.EnqueueJob(writeBytes, stream, pos, sender);
+  future.wait();
+}
+void ffwrite(FILE* stream, long& pos, float& sender){
+  std::future<void> future;
+  future = pool.EnqueueJob(writeFloat, stream, pos, sender);
+  future.wait();
 }

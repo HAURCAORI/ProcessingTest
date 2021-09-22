@@ -80,11 +80,12 @@ void SpecificDataRead(PAGE page, SECTOR sector)
 	string address = (string)Path + "0";
 	FILE *stream = fopen(address.c_str(), "r+");
 	if(stream) {
-		fseek(stream, SectorUnit*sector, SEEK_SET);
+		long pos = SectorUnit * sector;
 		BYTE byte;
 		for(int i = 0; i < SectorUnit; i ++)
 		{
-			fread(&byte, sizeof(BYTE), 1, stream);
+			ffread(stream, pos, byte);
+			++pos;
 			cout << getByteString(byte) << "/";
 		}
 		fclose(stream);
@@ -99,17 +100,23 @@ bool InsertDataHeader(PAGE page, SECTOR sector, BYTE type)
 	string address = (string)Path + "0";
 	FILE *stream = fopen(address.c_str(), "r+");
 	if(stream) {
-		fseek(stream, SectorUnit*sector, SEEK_SET);
-		fwrite(&type, 1, 1, stream); //type
-		fwrite(&count, 1, 1, stream);//size
-		fwrite(&empty, 1, 1, stream);//priority
-		fwrite(&empty, 1, 1, stream);//extra
+		long pos = SectorUnit * sector;
+		ffwrite(stream,pos,type);
+		++pos;
+		ffwrite(stream,pos,count);
+		++pos;
+		ffwrite(stream,pos,empty); //priority
+		++pos;
+		ffwrite(stream,pos,empty); //extra
+		++pos;
 		float threshold = random_threshold();
-		fwrite(&threshold, sizeof(float), 1, stream);
+		ffwrite(stream, pos, threshold);
+		pos += 4;
 		float weight = random_weight();
-		fwrite(&weight, sizeof(float), 1, stream);
+		ffwrite(stream, pos, weight);
+		pos += 4;
 		float temp = 0;
-		fwrite(&temp, sizeof(float), 1, stream);
+		ffwrite(stream, pos, temp);
 		fclose(stream);
 		return true;
 	}else{
@@ -122,11 +129,10 @@ bool InsertAddress(PAGE page, SECTOR sector, int offset, BYTES value)
 	string address = (string)Path + "0";
 	FILE *stream = fopen(address.c_str(), "r+");
 	if(stream) {
-		fseek(stream, SectorUnit*sector + offset, SEEK_SET);
-
-		if(isAvailableAddress(stream))
+		long pos = SectorUnit * sector + offset;
+		if(isAvailableAddress(stream, pos))
 		{
-			fwrite(&value, sizeof(BYTES), 1, stream);
+			ffwrite(stream, pos, value);
 			fclose(stream);
 			return true;
 		}else{
@@ -139,15 +145,16 @@ bool InsertAddress(PAGE page, SECTOR sector, int offset, BYTES value)
 
 bool InsertAddressAuto(Neuron* neuron, BYTES value)
 {
-	fseek(neuron->stream, SectorUnit*(neuron->sector) + 16 + (neuron->count)*2, SEEK_SET);
+	long pos = SectorUnit*(neuron->sector) + 16 + (neuron->count)*2;
 
-	if(isAvailableAddress(neuron->stream))
+	if(isAvailableAddress(neuron->stream, pos))
 	{
-		fwrite(&value, sizeof(BYTES), 1, neuron->stream);
+		ffwrite(neuron->stream, pos, value);
+		pos += 2;
 		BYTES extra = USHORT_MAX;
-		fwrite(&extra, sizeof(BYTES), 1, neuron->stream);
-		fseek(neuron->stream, SectorUnit*(neuron->sector) + 1, SEEK_SET);
-		UpDownData(neuron->stream, true);
+		ffwrite(neuron->stream, pos, extra);
+		pos = SectorUnit*(neuron->sector) + 1;
+		UpDownData(neuron->stream, pos, true);
 		return true;
 	}else{
 		return false; //주소 데이터 삽입 불가시 처리구문 추가
@@ -158,13 +165,16 @@ bool ClearData(PAGE page, SECTOR sector)
 {
 	string address = (string)Path + "0";
 	FILE *stream = fopen(address.c_str(), "r+");
-	int empty = 0;
+	float empty = 0;
 	if(stream) {
-		fseek(stream, SectorUnit*sector, SEEK_SET);
-		fwrite(&empty, 4, 1, stream);
-		fwrite(&empty, 4, 1, stream);
-		fwrite(&empty, 4, 1, stream);
-		fwrite(&empty, 4, 1, stream);
+		long pos = SectorUnit*sector;
+		ffwrite(stream, pos, empty);
+		pos += 4;
+		ffwrite(stream, pos, empty);
+		pos += 4;
+		ffwrite(stream, pos, empty);
+		pos += 4;
+		ffwrite(stream, pos, empty);
 		fclose(stream);
 		return true;
 	}else{
@@ -172,14 +182,14 @@ bool ClearData(PAGE page, SECTOR sector)
 	}
 }
 
-bool isAvailableAddress(FILE *stream)
+bool isAvailableAddress(FILE *stream, long pos)
 {
 	BYTES previous;
-	fread(&previous, sizeof(BYTES), 1, stream);
+	ffread(stream, pos, previous);
+	pos += 2;
 	if(previous == 0 || previous == USHORT_MAX)
 	{
-		fread(&previous, sizeof(BYTES), 1, stream);
-		fseek(stream, -4L, SEEK_CUR);
+		ffread(stream, pos ,previous);
 		if(previous == 0 || previous == USHORT_MAX)	
 			return true;
 		else
@@ -187,27 +197,24 @@ bool isAvailableAddress(FILE *stream)
 	}
 	else
 	{
-		fseek(stream, -2L, SEEK_CUR);
 		return false;
 	}
 }
 
-NUMBER UpDownData(FILE *stream, bool increase)
+NUMBER UpDownData(FILE *stream, long pos, bool increase)
 {
 	NUMBER count;
 	if(increase)
 	{
-		fread(&count, sizeof(NUMBER), 1, stream);
+		ffread(stream, pos, count);
 		count++;
-		fseek(stream, -1L, SEEK_CUR);
-		fwrite(&count, sizeof(NUMBER), 1, stream);
+		ffwrite(stream, pos, count);
 	}
 	else
 	{
-		fread(&count, sizeof(NUMBER), 1, stream);
+		ffread(stream, pos, count);
 		count--;
-		fseek(stream, -1L, SEEK_CUR);
-		fwrite(&count, sizeof(NUMBER), 1, stream);
+		ffwrite(stream, pos, count);
 	}
 	return count;
 }

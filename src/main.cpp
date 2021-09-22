@@ -4,7 +4,6 @@
 
 int main()
 {
-    Test();
     //ThreadTest();
     //CreateEmptyFile(0);
     //InsertDataHeader(0,0,TypeDefault());
@@ -12,7 +11,7 @@ int main()
     //InsertDataHeader(0,2,TypeDefault());
     //InsertDataHeader(0,3,TypeDefault());
 
-/*
+
 
     Signal s = SignalGen(1.0);
     Load(0,0,s);
@@ -28,7 +27,7 @@ int main()
     cout << "==" << endl;
     SpecificDataRead(0,2);
 
-*/
+
 
     
     /*
