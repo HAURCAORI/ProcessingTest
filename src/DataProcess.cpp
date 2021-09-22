@@ -40,7 +40,7 @@ bool Load(PAGE page, SECTOR sector, Signal signal)
             ActiveNeuron nactive = {neuron,(float) clock(),FlagGen()};
             list_neuron.push_back(nactive);
 
-            InsertAddressAuto(neuron, 2);
+            //InsertAddressAuto(neuron, 2);
 
 
             if(tsize > 0)
@@ -102,7 +102,7 @@ bool UnloadNeuron(Neuron *neuron) //과제 : 모든 값들은 stream 내에서 �
         temp = 0;
         ffwrite(stream, pos, temp);
     }
-    free(stream);
+    //free(stream);
 
     return true;
 }

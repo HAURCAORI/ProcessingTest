@@ -4,7 +4,6 @@
 
 int main()
 {
-    //ThreadTest();
     //CreateEmptyFile(0);
     //InsertDataHeader(0,0,TypeDefault());
     //InsertDataHeader(0,1,TypeDefault());
