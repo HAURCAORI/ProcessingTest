@@ -45,6 +45,8 @@ bool Load(PAGE page, SECTOR sector, Signal signal)
 
             if(tsize > 0)
             {
+                //5bit true여부 확인
+                //5bit는 InserAddressAuto 명령어를 수행 후 count 증가 시 &8=0일 경우 확인 후 true로 변환
                 BYTES bytes[tsize];
                 pos = SectorUnit*(neuron->sector) + 16;
                 for(int i = 0; i < tsize; i++)
