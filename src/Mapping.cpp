@@ -45,9 +45,11 @@ struct neuronTag
 {
 	string group;
 	string id;
-	int size = 16;
+	int estimate;
 	vector<string> stream;
-	vector<string> address;
+	PAGE page;
+	SECTOR sector;
+	vector<BYTE> bytes;
 };
 
 void Processing();
@@ -130,8 +132,8 @@ bool Mapping(){
 }
 
 int elementCount(string group){//최적화 위해서 나중에는 변수로 이식해두기
-	int count;
-	for(int i = 0; i < neuron_list.size(); i++){
+	int count = 0;
+	for(size_t i = 0; i < neuron_list.size(); i++){
 		if(neuron_list[i].group == group)
 		{
 			count++;
@@ -151,15 +153,15 @@ bool inGroup(string name)
 }
 
 void Processing(){
+	//1차원 neuron 목록 생성
 	int n = vector_group.size();
 	size_t index;
-	for(int i = 0; i < n; i++) //Tag 만듬
+	for(int i = 0; i < n; i++)
 	{
-		Group g = vector_group[i];
-		for(int j = 0; j < g.getCount(); j++) //1차적으로 neuron 목록을 만듬
+		for(int j = 0; j < vector_group[i].getCount(); j++)
 		{
 			string neuron_id;
-			string str = g.getItems()[j];
+			string str = vector_group[i].getItems()[j];
 			vector<string> div = split(str,',');
 			if(div.size() == 3)
 			{
@@ -184,13 +186,14 @@ void Processing(){
 			}
 		}
 	}
+
+	// 주소 개수 판단
 	for(size_t i = 0; i < neuron_list.size(); i++)
 	{
-		neuronTag tag = neuron_list[i];
-		if(tag.stream[1].empty())
+		int estimate = 18; //종결자 2bytes + header 16bytes
+		if(neuron_list[i].stream[1].empty())
 		{
-			vector<string> div = split(tag.stream[2],'/');
-			int estimate = 0;
+			vector<string> div = split(neuron_list[i].stream[2],'/');
 			for(size_t n = 0; n < div.size(); n++)
 			{
 				if(div[n].find(';') != string::npos)
@@ -206,29 +209,56 @@ void Processing(){
 							if(second.empty())
 							{
 								estimate += elementCount(first)*2;
-								estimate += 2;
+								estimate += 2; //전환자
 							}else{
 								size_t c = std::count(second.begin(), second.end(), '|')+1;
 								estimate += c*2;
-								estimate += 2;
+								estimate += 2; //전환자
 							}
 						}else{
 							error.append("[ERROR] [");
-							error.append(tag.group);
+							error.append(neuron_list[i].group);
 							error.append("] :: Can't Find group name '");
 							error.append(first);
 							error.append("'\n");
 						}
 					}
 				}else{
-					
+					estimate += 2;
 				}
 			}
 		}
+
+		neuron_list[i].estimate = estimate;
 	}
 
+	// 각 뉴런의 주소 할당
+	int page = 0;
+	int sector = 0;
+	for(size_t i = 0; i < neuron_list.size(); i++)
+	{
+		int n = (neuron_list[i].estimate / SectorUnit) + 1;
+		if((sector + n > USHORT_MAX-1)) //65535 주소는 사용할 수 없는 주소니 할당되는 것 방지
+		{
+			page += 1;
+			sector = 0;
+		}
+
+		neuron_list[i].page = page;
+		neuron_list[i].sector = sector;
+
+		sector += n;
+		
+		//cout << neuron_list[i].id << "(" << n <<  ") :" << neuron_list[i].page << "/" << neuron_list[i].sector << endl;
+	}
+	
+	// 파일에 직접 기록
+	
+
+	/*
 	for(size_t i = 0; i < neuron_list.size(); i++)
 	{
 		cout << neuron_list[i].group << "/" << neuron_list[i].id << endl;
 	}
+	*/
 }
