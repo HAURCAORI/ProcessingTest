@@ -12,6 +12,7 @@
         "tuple": "cpp",
         "type_traits": "cpp",
         "chrono": "cpp",
-        "string": "cpp"
+        "string": "cpp",
+        "vector": "cpp"
     }
 }

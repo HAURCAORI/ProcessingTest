@@ -3,7 +3,6 @@
 #include <iomanip>
 #include <random>
 #include <sstream>
-#include <vector>
 
 #define RANGE 0.5
 
@@ -50,4 +49,27 @@ float random_weight()
 {
     std::normal_distribution<float> dist(weight_mean, weight_stddev);
     return dist(gen);
+}
+
+vector<string> split(string str, char delimiter)
+{
+	vector<string> vs;
+	string temp;
+
+	for (int i = 0; !(str[i] == 13 /* Line Feed */ || str[i] == '\n' || str[i] == 0); i++)
+	{
+		if (str[i] == delimiter)
+		{
+			vs.push_back(temp);
+			temp.clear();
+
+			continue;
+		}
+
+		temp.push_back(str[i]);
+	}
+
+	vs.push_back(temp);
+
+	return vs;
 }

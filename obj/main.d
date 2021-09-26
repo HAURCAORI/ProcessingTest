@@ -135,9 +135,8 @@ obj/main.o: src/main.cpp /usr/include/stdc-predef.h include/main.h \
  /usr/include/c++/7/bits/basic_ios.tcc \
  /usr/include/c++/7/bits/ostream.tcc /usr/include/c++/7/istream \
  /usr/include/c++/7/bits/istream.tcc include/Calculate.h include/Struct.h \
- include/DataProcess.h /usr/include/c++/7/vector \
- /usr/include/c++/7/bits/stl_construct.h \
+ /usr/include/c++/7/vector /usr/include/c++/7/bits/stl_construct.h \
  /usr/include/c++/7/bits/stl_uninitialized.h \
  /usr/include/c++/7/bits/stl_vector.h \
  /usr/include/c++/7/bits/stl_bvector.h /usr/include/c++/7/bits/vector.tcc \
- include/Mapping.h
+ include/DataProcess.h include/Mapping.h

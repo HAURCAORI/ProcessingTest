@@ -23,16 +23,51 @@
 // 상호 참조 없도록 설계 n1->n2 n2->n1 불가능
 // 문법적으로 옳지 않으면 오류 출력 => 오류는 log파일로 저장
 
-struct Group
+class Group
 {
+	private:
 	string name;
 	streampos pos;
 	int count;
-	vector<string> *strings;
+	vector<string> vector_string;
+	public:
+	Group()
+	{
+		count = 0;
+	}
+	Group(string name, streampos pos)
+	{
+		this->name = name;
+		this->pos = pos;
+		count = 0;
+	}
+
+	void AddItem(string str)
+	{
+		vector_string.push_back(str);
+		count++;
+	}
+	vector<string> getItems(){return vector_string;}
+
+	int getCount()
+	{
+		return count;
+	}
+	string getName(){return name;};
+	void setName(string name){this->name = name;}
 };
 
+struct neuronlink
+{
+	string id;
+	string address;
+};
+
+void Processing();
 vector<Group> vector_group;
-vector<string> vector_string;
+vector<string> group_name_list;
+
+string error;
 
 bool Mapping(){
     string address = (string)Path + "mapping";
@@ -40,7 +75,7 @@ bool Mapping(){
 	if (file.is_open())
     {
 		string str;
-		string error;
+		
 		streampos pos; // 파일에서의 위치
 		int line = 1;
 		size_t index; // 인덱스 검색 시 사용
@@ -60,10 +95,19 @@ bool Mapping(){
 				}
 				else if (str == "#END")
 				{
+					if(previous == true)
+					{
+						vector_group.push_back(group);
+					}
 					break;
 				}
 			}
-			if(str.front() == '[') //group
+
+			if(str.front() == ' ' || str.empty())
+			{
+				continue;
+			}
+			else if(str.front() == '[') //group
 			{
 				if(previous == true)
 				{
@@ -72,25 +116,69 @@ bool Mapping(){
 
 				index = str.find_last_of(']');
 				if(index == string::npos)
-					error.append("[ERROR] Can't find ']'");
+				{
+					error.append("[ERROR] Can't find ']'\n");
+				}
 				current_group = str.substr(1,index-1);
-				group = {current_group,pos,0};
+				group_name_list.push_back(current_group);
+				group = Group(current_group,pos);
 				previous = true;
 				continue;
 			}
-			else if(str.front() == ' ' || str.empty())
-			{
-				cout << "empty" << endl;
-			}
 			else if(previous == true)
 			{
-				group.count++;
-				vector_string.push_back(str);
+				group.AddItem(str);
 			}
 
 			line++;
 		}
 		file.close();
+		//cout << "size : " << vector_group.size() << endl;
+		//cout << vector_group[1].getCount() << endl;
+		Processing();
 	}
+	cout << error << endl;
     return true;
+}
+
+bool inGroup(string name)
+{
+	for(size_t i = 0; i < group_name_list.size(); i++)
+	{
+		if(group_name_list[i] == name)
+			return true;
+	}
+	return false;
+}
+
+void Processing(){
+	int n = vector_group.size();
+	size_t index;
+	for(int i = 0; i < n; i++)
+	{
+		Group g = vector_group[i];
+		for(int j = 0; j < g.getCount(); j++) //1차적으로 neuron 목록을 만듬
+		{
+			string neuron_id;
+			string str = g.getItems()[j];
+			vector<string> div = split(str,',');
+			if(div.size() == 3)
+			{
+				index = div[0].find_first_of('[');
+				if(index == string::npos)
+				{
+					cout << div[0] << endl;
+				}else{
+					cout << div[0].substr(0,index-1) << endl;
+				}
+			}else{
+				error.append("[WARNING] ");
+				error.append(vector_group[i].getName());
+				error.append("|Line:");
+				error.append(to_string(j+1));
+				error.append(" :: Inappropriate Count of Parameters\n");
+			}
+		}
+		
+	}
 }
