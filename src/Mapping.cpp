@@ -1,6 +1,9 @@
 #include "Mapping.h"
 #include <iostream>
 #include <vector>
+#include <fstream>
+#include <algorithm>
+#include <string>
 
 // SYNTAX
 // [group1]
@@ -20,12 +23,74 @@
 // 상호 참조 없도록 설계 n1->n2 n2->n1 불가능
 // 문법적으로 옳지 않으면 오류 출력 => 오류는 log파일로 저장
 
+struct Group
+{
+	string name;
+	streampos pos;
+	int count;
+	vector<string> *strings;
+};
+
+vector<Group> vector_group;
+vector<string> vector_string;
+
 bool Mapping(){
     string address = (string)Path + "mapping";
-	FILE *stream = fopen(address.c_str(), "r+");
-	if(!stream) {
-		return false;
-	}
+	ifstream file(address);
+	if (file.is_open())
+    {
+		string str;
+		string error;
+		streampos pos; // 파일에서의 위치
+		int line = 1;
+		size_t index; // 인덱스 검색 시 사용
+		Group group;
+		string current_group;
+		bool previous = false;
+        while (!file.eof())
+        {
+			pos = file.tellg();
+			getline(file, str);
+			if(str.front() == '#')
+			{
+				transform(str.begin(), str.end(),str.begin(), ::toupper);
+				if(str == "#BEGIN")
+				{
+					continue;
+				}
+				else if (str == "#END")
+				{
+					break;
+				}
+			}
+			if(str.front() == '[') //group
+			{
+				if(previous == true)
+				{
+					vector_group.push_back(group);
+				}
 
+				index = str.find_last_of(']');
+				if(index == string::npos)
+					error.append("[ERROR] Can't find ']'");
+				current_group = str.substr(1,index-1);
+				group = {current_group,pos,0};
+				previous = true;
+				continue;
+			}
+			else if(str.front() == ' ' || str.empty())
+			{
+				cout << "empty" << endl;
+			}
+			else if(previous == true)
+			{
+				group.count++;
+				vector_string.push_back(str);
+			}
+
+			line++;
+		}
+		file.close();
+	}
     return true;
 }

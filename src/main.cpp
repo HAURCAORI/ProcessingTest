@@ -1,9 +1,11 @@
 #include "main.h"
 #include "Calculate.h"
 #include "DataProcess.h"
+#include "Mapping.h"
 
 int main()
 {
+    Mapping();
     //CreateEmptyFile(0);
     //InsertDataHeader(0,0,TypeDefault());
     //InsertDataHeader(0,1,TypeDefault());
@@ -11,7 +13,7 @@ int main()
     //InsertDataHeader(0,3,TypeDefault());
 
 
-
+    /*
     Signal s = SignalGen(1.0);
     Load(0,0,s);
 
@@ -25,7 +27,7 @@ int main()
     SpecificDataRead(0,1);
     cout << "==" << endl;
     SpecificDataRead(0,2);
-
+    */
 
 
     

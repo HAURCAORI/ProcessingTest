@@ -11,6 +11,7 @@
         "istream": "cpp",
         "tuple": "cpp",
         "type_traits": "cpp",
-        "chrono": "cpp"
+        "chrono": "cpp",
+        "string": "cpp"
     }
 }

@@ -3,3 +3,5 @@
 #include "Calculate.h"
 
 using namespace std;
+
+bool Mapping();
