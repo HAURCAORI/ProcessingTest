@@ -12,4 +12,6 @@ BIT getBit(const BYTE byte, const int n);
 float random_threshold();
 float random_weight();
 
+bool isnumber(const std::string& s);
+
 vector<string> split(string str, char delimiter);

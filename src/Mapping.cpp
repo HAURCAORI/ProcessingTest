@@ -5,23 +5,7 @@
 #include <algorithm>
 #include <string>
 
-// SYNTAX
-// [group1]
-// n1[12.4,12.0],mode,n2/n3/n4/n5/n6/1321;12312/group2[partial]
-// n2[],0,n1
-// [group2]
-// n1[1.0,2.0],mode,n1/group1;n2
 
-// 첫번째 항 : neuron의 id, 임의 명칭 지정 가능 괄호안 [threshold, weight], 괄호는 생략 가능, 그룹별로 id는 별개로 취급
-// 두번째 항 : group 나누기 (다중 그룹 지정 가능)
-// 세번째 항 : 주소 등록 방식(공백은 뒤에 있는 주소를 이용, 'z'는 주소 없이 다음 neuron으로 전달, 'i'는 input neuron으로 사용, 'o'은 output peuron으로 사용)
-// 네번째 항 : 주소 목록(형식 : neuron id 또는 page;sector 또는 group)
-
-
-// TODO
-// group 등 필요한 정보 파일로 저장
-// 상호 참조 없도록 설계 n1->n2 n2->n1 불가능
-// 문법적으로 옳지 않으면 오류 출력 => 오류는 log파일로 저장
 
 class Group
 {
@@ -57,15 +41,19 @@ class Group
 	void setName(string name){this->name = name;}
 };
 
-struct neuronlink
+struct neuronTag
 {
+	string group;
 	string id;
-	string address;
+	int size = 16;
+	vector<string> stream;
+	vector<string> address;
 };
 
 void Processing();
 vector<Group> vector_group;
 vector<string> group_name_list;
+vector<neuronTag> neuron_list;
 
 string error;
 
@@ -141,7 +129,18 @@ bool Mapping(){
     return true;
 }
 
-bool inGroup(string name)
+int elementCount(string group){//최적화 위해서 나중에는 변수로 이식해두기
+	int count;
+	for(int i = 0; i < neuron_list.size(); i++){
+		if(neuron_list[i].group == group)
+		{
+			count++;
+		}
+	}
+	return count;
+}
+
+bool inGroup(string name) 
 {
 	for(size_t i = 0; i < group_name_list.size(); i++)
 	{
@@ -154,7 +153,7 @@ bool inGroup(string name)
 void Processing(){
 	int n = vector_group.size();
 	size_t index;
-	for(int i = 0; i < n; i++)
+	for(int i = 0; i < n; i++) //Tag 만듬
 	{
 		Group g = vector_group[i];
 		for(int j = 0; j < g.getCount(); j++) //1차적으로 neuron 목록을 만듬
@@ -167,10 +166,15 @@ void Processing(){
 				index = div[0].find_first_of('[');
 				if(index == string::npos)
 				{
-					cout << div[0] << endl;
+					neuron_id = div[0];
 				}else{
-					cout << div[0].substr(0,index-1) << endl;
+					neuron_id = div[0].substr(0,index);
 				}
+				neuronTag tag;
+				tag.id = neuron_id;
+				tag.group = vector_group[i].getName();
+				tag.stream = div;
+				neuron_list.push_back(tag);
 			}else{
 				error.append("[WARNING] ");
 				error.append(vector_group[i].getName());
@@ -179,6 +183,52 @@ void Processing(){
 				error.append(" :: Inappropriate Count of Parameters\n");
 			}
 		}
-		
+	}
+	for(size_t i = 0; i < neuron_list.size(); i++)
+	{
+		neuronTag tag = neuron_list[i];
+		if(tag.stream[1].empty())
+		{
+			vector<string> div = split(tag.stream[2],'/');
+			int estimate = 0;
+			for(size_t n = 0; n < div.size(); n++)
+			{
+				if(div[n].find(';') != string::npos)
+				{
+					index = div[n].find_first_of(';');
+					string first = div[n].substr(0,index);
+					string second = div[n].substr(index+1);
+					if(isnumber(first) && isnumber(second)){
+						estimate += 4;
+					}else{
+						if(inGroup(first))
+						{
+							if(second.empty())
+							{
+								estimate += elementCount(first)*2;
+								estimate += 2;
+							}else{
+								size_t c = std::count(second.begin(), second.end(), '|')+1;
+								estimate += c*2;
+								estimate += 2;
+							}
+						}else{
+							error.append("[ERROR] [");
+							error.append(tag.group);
+							error.append("] :: Can't Find group name '");
+							error.append(first);
+							error.append("'\n");
+						}
+					}
+				}else{
+					
+				}
+			}
+		}
+	}
+
+	for(size_t i = 0; i < neuron_list.size(); i++)
+	{
+		cout << neuron_list[i].group << "/" << neuron_list[i].id << endl;
 	}
 }
