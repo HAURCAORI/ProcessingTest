@@ -1,10 +1,12 @@
-#begin
+#PAGE=10 //나중에 구현
+#SECTOR=5
+#BEGIN
 [group1]
-n1[12.4/12.0],,n2/n3/1321;12312/group1;n1|n2|n3/group2;
+n1[12.4|12.0],,n2/n3/1321;12312/group1;n1|n2|n3/group2;
 n2[],,n1/n2
 n3,,n1
 [group2]
-n1[1.0:2.0],,n1/group1;n2
+n1[1.0|2.0],,n1/group1;n2
 n3,,n1
-n4,,n1
+n4,x,n1/group1;/group1;
 #END
