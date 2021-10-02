@@ -318,11 +318,7 @@ void Processing(){
 	for(size_t i = 0; i < neuron_list.size(); i++)
 	{
 		int num = (neuron_list[i].estimate / SectorUnit) + 1;
-		if(neuron_list[i].estimate == 0)
-		{
-			continue;
-		}
-		else if(neuron_list[i].estimate == 16)
+		if(neuron_list[i].estimate == 16)
 		{
 			int nn = (neuron_list[i+1].estimate / SectorUnit) + 1;//다음 뉴런의 정보도 고려
 			if((sector + nn > USHORT_MAX-1))
@@ -351,7 +347,7 @@ void Processing(){
 			sector += num;
 			countsector += num;
 		}
-		cout << neuron_list[i].id << "(" << num << ") :" << neuron_list[i].page << "/" << neuron_list[i].sector << endl;
+		//cout << neuron_list[i].id << "(" << num << ") :" << neuron_list[i].page << "/" << neuron_list[i].sector << endl;
 		
 	}
 
@@ -361,11 +357,7 @@ void Processing(){
 	for(size_t i = 0; i < neuron_list.size(); i++)
 	{
 		vector<BYTES> temp;
-		if(neuron_list[i].estimate==0)
-		{
-			continue;
-		}
-		else if(neuron_list[i].stream[1].empty()) //***기본 지정자***
+		if(neuron_list[i].stream[1].empty()) //***기본 지정자***
 		{
 			vector<string> div = split(neuron_list[i].stream[2],'/');
 			for(size_t n = 0; n < div.size(); n++)
@@ -378,18 +370,14 @@ void Processing(){
 					if(isnumber(first) && isnumber(second)){ //숫자쌍은 단일 주소 의미
 						
 					}else{
-						if(inGroup(first))
+						//first가 그룹에 속해있는지는 이미 확인했으므로 생략
+						if(second.empty())
 						{
-							if(second.empty())
-							{
-								//해당 그룹의 모든 데이터로 연결
+							//해당 그룹의 모든 데이터로 연결
 								
-							}else{
-								//해당 그룹의 특수 데이터로 연결
-								
-							}
 						}else{
-							ErrorMsg(false,neuron_list[i].group, i+1, "EEEEEEEEEE"); //옳게 되면 나오면 안되는 오류
+							//해당 그룹의 특수 데이터로 연결
+							
 						}
 					}
 				}else{

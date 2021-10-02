@@ -8,5 +8,5 @@ n3,,n1
 [group2]
 n1[1.0|2.0],,n1/group1;n2
 n3,,n1
-n4,x,n1/group1;/group1;
+n4,,n1/group1;/group1;
 #END
