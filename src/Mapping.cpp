@@ -52,7 +52,7 @@ struct neuronTag
 
 struct AddressSet
 {
-	vector<BYTES> *bytes;
+	vector<BYTES> bytes;
 	PAGE page;
 };
 
@@ -102,6 +102,7 @@ bool Mapping(){
 				transform(str.begin(), str.end(),str.begin(), ::toupper);//대문자로 치환
 				if(str == "#BEGIN"){
 					valid = true;
+					line++;
 					continue;
 				}
 				else if (str == "#END")
@@ -124,7 +125,8 @@ bool Mapping(){
 					{
 						ErrorMsg(false,"FILE", line, "Value of '#PAGE' is not a number");
 					}
-					
+					line++;
+					continue;
 				}
 				else if (str.substr(0,7) =="#SECTOR")
 				{
@@ -137,7 +139,8 @@ bool Mapping(){
 					{
 						ErrorMsg(false,"FILE", line, "Value of '#SECTOR' is not a number");
 					}
-					
+					line++;
+					continue;
 				}
 			}
 			if(valid == true)
@@ -147,6 +150,7 @@ bool Mapping(){
 				//==========//
 				if(str.front() == ' ' || str.empty()) //공백 무시
 				{
+					line++;
 					continue;
 				}
 				else if(str.front() == '[') //Group여부 확인
@@ -162,10 +166,24 @@ bool Mapping(){
 						ErrorMsg(true,"GROUP", line, "Can't find ']'.");
 						valid = false;
 					}
+					
 					current_group = str.substr(1,index-1);
+
+					for(size_t i = 0; i < group_name_list.size(); i++)
+					{
+						if(group_name_list[i] == current_group)
+						{
+							ErrorMsg(true,"GROUP", line, "Group name must be different.");
+							valid = false;
+							break;
+						}
+					}
+					
 					group_name_list.push_back(current_group);
 					group = Group(current_group);
+
 					previous = true;
+					line++;
 					continue;
 				}
 				else if(previous == true)
@@ -409,7 +427,6 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 	for(int i = 0; i < (countpage+1);i++)//page별로 저장 => 같은 페이지와 다른 페이지 여부 확인 => 각 페이지에 주소 추가 => 병합
 	{
 		AddressSet temp;
-		temp.bytes = new vector<BYTES>;
 		temp.page = (offset_page+i);
 		address_list.push_back(temp);
 	}
@@ -432,7 +449,29 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 						if(second.empty())
 						{
 							//해당 그룹의 모든 데이터로 연결
-								
+							for(size_t j = 0; j < neuron_list.size(); j++)
+							{
+								if(neuron_list[j].group == first)
+								{
+									if(i!=j)//자기 그룹은 참조 x
+									{
+										for(size_t k = 0; k < address_list.size(); k++)
+										{
+											if(neuron_list[j].page == address_list[k].page)
+											{
+												address_list[k].bytes.push_back(neuron_list[j].sector);
+												break;
+											}
+										}
+										 neuron_list[j].sector;
+										 continue;
+									}
+									else
+									{
+										//에러 발생
+									}
+								}
+							}
 						}else{
 							//해당 그룹의 특수 데이터로 연결
 							
@@ -440,7 +479,15 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 					}
 				}else{
 					//기본 주소로 처리
-
+					for(size_t j = 0; j < address_list.size(); j++)
+					{
+						if(address_list[j].page == neuron_list[i].page)
+						{
+							address_list[j].bytes.push_back(neuron_list[i].sector);
+							break;
+						}
+					}
+					
 				}
 			}
 		}else if(neuron_list[i].stream[1] == "x") //***next 지정자***
