@@ -50,16 +50,27 @@ struct neuronTag
 	vector<BYTES> *bytes;
 };
 
-void Processing();
+struct AddressSet
+{
+	vector<BYTES> *bytes;
+	PAGE page;
+};
+
+void Processing(const PAGE offset_page, const SECTOR offset_sector);
 vector<Group> vector_group;
 vector<string> group_name_list;// 빠른 검색을 위한 그룹 이름 지정
 vector<neuronTag> neuron_list;
+vector<AddressSet> address_list;
 const vector<string> methods = {"", "x","i","o"};
 
 
 string error;
 
 bool Mapping(){
+	vector_group.clear();
+	group_name_list.clear();
+	neuron_list.clear();//포인터 해제
+	address_list.clear();
     string address = (string)Path + "mapping";
 	ifstream file(address);
 	if (file.is_open())
@@ -73,6 +84,8 @@ bool Mapping(){
 		bool previous = false;
 		bool valid = false;
 		bool end = false;
+		PAGE offset_page = 0;
+		SECTOR offset_sector = 0;
 		//----------------------//
 		//그룹 확인 및 그룹 데이터 지정
 		//----------------------//
@@ -93,12 +106,38 @@ bool Mapping(){
 				}
 				else if (str == "#END")
 				{
+					end = true;
 					if(previous == true)
 					{
 						vector_group.push_back(group);
-						end = true;
 					}
 					break;
+				}
+				else if (str.substr(0,5) =="#PAGE")
+				{
+					string temp = str.substr(str.find_first_of('=')+1);
+					if(isnumber(temp))
+					{
+						offset_page = stoi(temp);
+					}
+					else
+					{
+						ErrorMsg(false,"FILE", line, "Value of '#PAGE' is not a number");
+					}
+					
+				}
+				else if (str.substr(0,7) =="#SECTOR")
+				{
+					string temp = str.substr(str.find_first_of('=')+1);
+					if(isnumber(temp))
+					{
+						offset_sector = stoi(temp);
+					}
+					else
+					{
+						ErrorMsg(false,"FILE", line, "Value of '#SECTOR' is not a number");
+					}
+					
 				}
 			}
 			if(valid == true)
@@ -133,8 +172,8 @@ bool Mapping(){
 				{
 					group.AddItem(str);//Group내의 모든 데이터행을 추가
 				}
-				line++;
 			}
+			line++;
 		}
 		file.close();
 		
@@ -145,7 +184,7 @@ bool Mapping(){
 
 		if(valid == true)
 		{
-			Processing(); //그룹화가 끝나면 프로세싱 진행
+			Processing(offset_page,offset_sector); //그룹화가 끝나면 프로세싱 진행
 		}
 		else
 		{
@@ -202,7 +241,7 @@ bool inMethod(string method)
 //********************//
 //  Processing()
 //********************//
-void Processing(){
+void Processing(const PAGE offset_page, const SECTOR offset_sector){
 	//----------------------//
 	// i. 1차원 neuron 목록 생성
 	//----------------------//
@@ -311,25 +350,31 @@ void Processing(){
 	//----------------------//
 	// iii. 각 뉴런의 주소 할당
 	//----------------------//
-	int page = 0;
-	int sector = 0;
+	int page = 0 + offset_page;
+	int sector = 0 + offset_sector;
 	int countpage = 0;
 	int countsector = 0;
+	bool previous = false;
 	for(size_t i = 0; i < neuron_list.size(); i++)
 	{
 		int num = (neuron_list[i].estimate / SectorUnit) + 1;
 		if(neuron_list[i].estimate == 16)
 		{
+			num = 1;
 			int nn = (neuron_list[i+1].estimate / SectorUnit) + 1;//다음 뉴런의 정보도 고려
-			if((sector + nn > USHORT_MAX-1))
+			if((sector + num + nn > USHORT_MAX-1))
 			{
 				page += 1;
 				sector = 0;
-				++countpage;
+				if(previous == true)
+				{
+					++countpage;
+				}
 			}
 			neuron_list[i].page = page;
 			neuron_list[i].sector = sector;
-			
+			previous = true;
+
 			++sector;
 			++countsector;;
 		}
@@ -339,24 +384,37 @@ void Processing(){
 			{
 				page += 1;
 				sector = 0;
-				++countpage;
+				if(previous == true)
+				{
+					++countpage;
+				}
 			}
 			neuron_list[i].page = page;
 			neuron_list[i].sector = sector;
+			previous = true;
 
 			sector += num;
 			countsector += num;
 		}
-		//cout << neuron_list[i].id << "(" << num << ") :" << neuron_list[i].page << "/" << neuron_list[i].sector << endl;
+		cout << neuron_list[i].id << "(" << num << ") :" << neuron_list[i].page << "/" << neuron_list[i].sector << endl;
 		
 	}
-
+	cout <<"p:"<< page << endl;
+	cout <<"s:"<< sector << endl;
+	cout <<"cp:"<< countpage << endl;
+	cout <<"cs:"<< countsector << endl;
 	//----------------------//
 	// iv. tag에 주소 기록
 	//----------------------//
+	for(int i = 0; i < (countpage+1);i++)//page별로 저장 => 같은 페이지와 다른 페이지 여부 확인 => 각 페이지에 주소 추가 => 병합
+	{
+		AddressSet temp;
+		temp.bytes = new vector<BYTES>;
+		temp.page = (offset_page+i);
+		address_list.push_back(temp);
+	}
 	for(size_t i = 0; i < neuron_list.size(); i++)
 	{
-		vector<BYTES> temp;
 		if(neuron_list[i].stream[1].empty()) //***기본 지정자***
 		{
 			vector<string> div = split(neuron_list[i].stream[2],'/');
@@ -382,13 +440,14 @@ void Processing(){
 					}
 				}else{
 					//기본 주소로 처리
+
 				}
 			}
 		}else if(neuron_list[i].stream[1] == "x") //***next 지정자***
 		{
 			
 		}
-		neuron_list[i].bytes = &temp;
+		//neuron_list[i].bytes = &temp;
 	}
 	
 
