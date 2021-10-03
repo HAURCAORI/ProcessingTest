@@ -1,6 +1,10 @@
 #PAGE=0
 #SECTOR=0
 #BEGIN
+[INPUT]
+
+[OUTPUT]
+
 [group1]
 n1[12.4|12.0],,n2/n3/1321;12312/group1;n1|n2|n3/group2;
 n2[],,n1/n2

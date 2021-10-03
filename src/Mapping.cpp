@@ -169,7 +169,7 @@ bool Mapping(){
 					
 					current_group = str.substr(1,index-1);
 
-					for(size_t i = 0; i < group_name_list.size(); i++)
+					for(size_t i = 0; i < group_name_list.size(); i++)//이름 같은지 확인
 					{
 						if(group_name_list[i] == current_group)
 						{
@@ -264,6 +264,7 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 	// i. 1차원 neuron 목록 생성
 	//----------------------//
 	int n = vector_group.size();
+	bool valid = true;
 	size_t index;
 	for(int i = 0; i < n; i++)//그룹의 항목 검색
 	{
@@ -282,14 +283,16 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 					neuron_id = div[0].substr(0,index);
 					if(div[0].find_last_of(']') == string::npos)
 					{
-						ErrorMsg(false,vector_group[i].getName(), j+1, "Inappropriate ID Property. Can't find ']'.");
-						continue;
+						ErrorMsg(true,vector_group[i].getName(), j+1, "Inappropriate ID Property. Can't find ']'.");
+						valid = false;
+						break;
 					}
 				}
 				if(!inMethod(div[1]))
 				{
-					ErrorMsg(false,vector_group[i].getName(), j+1, "There is no method named '" + div[1] + "'.");
-					continue;
+					ErrorMsg(true,vector_group[i].getName(), j+1, "There is no method named '" + div[1] + "'.");
+					valid = false;
+					break;
 				}
 				neuronTag tag;
 				tag.id = neuron_id;
@@ -297,9 +300,17 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 				tag.stream = div;
 				neuron_list.push_back(tag);
 			}else{
-				ErrorMsg(false,vector_group[i].getName(), j+1, "Inappropriate Count of Parameters.");
+				ErrorMsg(true,vector_group[i].getName(), j+1, "Inappropriate Count of Parameters.");
+				valid = false;
+				break;
 			}
 		}
+	}
+
+	if(valid == false)
+	{
+		ErrorMsg(true,"FILE", 0, "Failed to mapping.");
+		return;
 	}
 	//----------------------//
 	// ii. 주소 개수 판단
@@ -357,7 +368,7 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 		}
 		neuron_list[i].estimate = estimate;
 	}
-	//문법 오류가 있는 데이터 삭제
+	//문법 오류가 있는 데이터 삭제 warning으로 진행 가능
 	for(vector<neuronTag>::size_type i=0; i < neuron_list.size();){ 
 		if(neuron_list[i].estimate == 0){
 			neuron_list.erase(neuron_list.begin() + i);
