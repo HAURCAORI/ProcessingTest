@@ -346,46 +346,116 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 	//----------------------//
 	// i. 1차원 neuron 목록 생성
 	//----------------------//
-	int n = vector_group.size();
 	bool valid = true;
 	size_t index;
-	for(int i = 0; i < n; i++)//그룹의 항목 검색
+	for(size_t i = 0; i < vector_group.size(); i++)//그룹의 항목 검색
 	{
-		for(int j = 0; j < vector_group[i].getCount(); j++)
+		if(vector_group[i].getName() == "INPUT")
 		{
-			string neuron_id;
-			string str = vector_group[i].getItems()[j];
-			vector<string> div = split(str,',');
-			if(div.size() == 3)
+			for(int j = 0; j < vector_group[i].getCount(); j++)
 			{
-				index = div[0].find_first_of('[');
+				string neuron_id;
+				string str = vector_group[i].getItems()[j];
+				if(str.find("->") != string::npos)
+				{
+					vector<string> div = split(str,'>');
+					if(div.size() == 2)
+					{
+						index = div[0].find_first_of('[');
+						if(index == string::npos)
+						{
+							neuron_id = div[0];
+						}else{
+							neuron_id = div[0].substr(0,index);
+							if(div[0].find_last_of(']') == string::npos)
+							{
+								ErrorMsg(true,vector_group[i].getName(), j+1, "Inappropriate ID Property. Can't find ']'.");
+								valid = false;
+								break;
+							}
+						}
+						neuronTag tag;
+						tag.id = neuron_id;
+						tag.group = "INPUT";
+						tag.stream = div;
+						neuron_list.push_back(tag);
+					}
+				}
+				else
+				{
+					ErrorMsg(true,vector_group[i].getName(), j+1, "INPUT must be contain '->' symbol.");
+					valid = false;
+					break;
+				}
+			}
+		}
+		else if(vector_group[i].getName() == "OUTPUT")
+		{
+			for(int j = 0; j < vector_group[i].getCount(); j++)
+			{
+				string neuron_id;
+				string str = vector_group[i].getItems()[j];
+				vector<string> div;
+				div.push_back(str);
+				div.push_back(str);
+				index = str.find_first_of('[');
 				if(index == string::npos)
 				{
-					neuron_id = div[0];
+					neuron_id = str;
 				}else{
-					neuron_id = div[0].substr(0,index);
-					if(div[0].find_last_of(']') == string::npos)
+					neuron_id = str.substr(0,index);
+					if(str.find_last_of(']') == string::npos)
 					{
 						ErrorMsg(true,vector_group[i].getName(), j+1, "Inappropriate ID Property. Can't find ']'.");
 						valid = false;
 						break;
 					}
 				}
-				if(!inMethod(div[1]))
+				neuronTag tag;
+				tag.id = neuron_id;
+				tag.group = "OUTPUT";
+				tag.stream = div;
+				neuron_list.push_back(tag);
+			}
+		}
+		else
+		{
+			for(int j = 0; j < vector_group[i].getCount(); j++)
+			{
+				string neuron_id;
+				string str = vector_group[i].getItems()[j];
+				vector<string> div = split(str,',');
+				if(div.size() == 3)
 				{
-					ErrorMsg(true,vector_group[i].getName(), j+1, "There is no method named '" + div[1] + "'.");
+					index = div[0].find_first_of('[');
+					if(index == string::npos)
+					{
+						neuron_id = div[0];
+					}else{
+						neuron_id = div[0].substr(0,index);
+						if(div[0].find_last_of(']') == string::npos)
+						{
+							ErrorMsg(true,vector_group[i].getName(), j+1, "Inappropriate ID Property. Can't find ']'.");
+							valid = false;
+							break;
+						}
+					}
+					if(!inMethod(div[1]))
+					{
+						ErrorMsg(true,vector_group[i].getName(), j+1, "There is no method named '" + div[1] + "'.");
+						valid = false;
+						break;
+					}
+					neuronTag tag;
+					tag.id = neuron_id;
+					tag.group = vector_group[i].getName();
+					tag.stream = div;
+					neuron_list.push_back(tag);
+				}else{
+					ErrorMsg(true,vector_group[i].getName(), j+1, "Inappropriate Count of Parameters.");
 					valid = false;
 					break;
 				}
-				neuronTag tag;
-				tag.id = neuron_id;
-				tag.group = vector_group[i].getName();
-				tag.stream = div;
-				neuron_list.push_back(tag);
-			}else{
-				ErrorMsg(true,vector_group[i].getName(), j+1, "Inappropriate Count of Parameters.");
-				valid = false;
-				break;
 			}
 		}
 	}
@@ -401,7 +471,54 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 	for(size_t i = 0; i < neuron_list.size(); i++)
 	{
 		int estimate = 18; //종결자 2bytesp[0xff 0xff] + header 16bytes
-		if(neuron_list[i].stream[1].empty()) //***기본 지정자***
+		if(neuron_list[i].group == "INPUT")
+		{
+			vector<string> div = split(neuron_list[i].stream[1],'/');
+			for(size_t n = 0; n < div.size(); n++)
+			{
+				if(div[n].find(';') != string::npos) //그룹여부는 ';' 유무로 구분
+				{
+					index = div[n].find_first_of(';');
+					string first = div[n].substr(0,index);
+					string second = div[n].substr(index+1);
+					if(isnumber(first) && isnumber(second)){ //숫자쌍은 단일 주소 의미
+						estimate += 6; //전환자 + 해당Page 주소 + 단일 데이터 sector 주소
+					}else{
+						if(inGroup(first))
+						{
+							if(second.empty())
+							{
+								//해당 그룹의 모든 데이터로 연결
+								estimate += elementCount(first)*2; 
+								estimate += 4; //전환자 + 해당Page 주소 나중에 수정 page가 달라지는 여부는 다르게 판단
+							}else{
+								//해당 그룹의 특수 데이터로 연결
+								size_t c = std::count(second.begin(), second.end(), '|')+1;// |로 주소 구분
+								estimate += c*2;
+								estimate += 4; //전환자 + 해당Page 주소
+							}
+						}else{
+							string err = first;
+							estimate = 0;
+							ErrorMsg(false,neuron_list[i].group, i+1, "Can't find group name '" + err + "'.");
+							break;
+						}
+					}
+				}else{
+					estimate = 0;
+					ErrorMsg(false,neuron_list[i].group, i+1, "INPUT target address should include PAGE.");
+					break;
+				}
+			}
+			neuron_list[i].estimate = estimate;
+			continue;
+		}
+		else if(neuron_list[i].group == "OUTPUT")
+		{
+			neuron_list[i].estimate = 31;
+			continue;
+		}
+		else if(neuron_list[i].stream[1].empty()) //***기본 지정자***
 		{
 			vector<string> div = split(neuron_list[i].stream[2],'/');
 			for(size_t n = 0; n < div.size(); n++)
@@ -464,12 +581,15 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 	//----------------------//
 	int page = 0 + offset_page;
 	int sector = 0 + offset_sector;
+	int sector_input = 0;
+	int sector_output = 0;
 	int countpage = 0;
 	int countsector = 0;
 	bool previous = false;
 	for(size_t i = 0; i < neuron_list.size(); i++)
 	{
 		int num = (neuron_list[i].estimate / SectorUnit) + 1;
+		if(neuron_list[i].group != "INPUT" && neuron_list[i].group != "OUTPUT"){
 		if(neuron_list[i].estimate == 16)
 		{
 			num = 1;
@@ -508,9 +628,21 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 			sector += num;
 			countsector += num;
 		}
+		}
+		else if(neuron_list[i].group == "INPUT")
+		{
+			neuron_list[i].page = USHORT_MAX;
+			neuron_list[i].sector = sector_input;
+			sector_input += num;
+		}
+		else if(neuron_list[i].group == "OUTPUT")
+		{
+			neuron_list[i].page = USHORT_MAX;
+			neuron_list[i].sector = sector_output;
+			sector_output += 2;
+		}
 		if(LOG)
 			cout << neuron_list[i].id << "(" << num << ") :" << neuron_list[i].page << "/" << neuron_list[i].sector << endl;
-		
 	}
 
 	//----------------------//
@@ -524,6 +656,8 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 
 	for(size_t g = 0; g < groupset_list.size(); g++)
 	{
+		if(groupset_list[g].group != "INPUT" && groupset_list[g].group != "OUTPUT")
+		{
 		for(size_t i = 0; i < groupset_list[g].list.size(); i++)
 		{
 			CreateAddressSet(countpage, offset_page);
@@ -705,6 +839,146 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 			cout << endl;
 			*/
 			
+		}
+		}
+		else if(groupset_list[g].group == "INPUT")
+		{
+			for(size_t i = 0; i < groupset_list[g].list.size(); i++)
+			{
+				CreateAddressSet(countpage, offset_page);
+				vector<string> div = split(groupset_list[g].list[i].stream[1],'/');
+				for(size_t n = 0; n < div.size(); n++)
+				{
+					if(div[n].empty())
+						continue;
+
+					index = div[n].find_first_of(';');
+					string first = div[n].substr(0,index);
+					string second = div[n].substr(index+1);
+					if(isnumber(first) && isnumber(second)){ //숫자쌍은 단일 주소 의미
+						bool check = false;
+						int temp_p = stoi(first);
+						int temp_s = stoi(second);
+						if(!(temp_p <= 65535 && temp_p >= 0))
+						{
+							ErrorMsg(true,groupset_list[g].list[i].group + ":" + groupset_list[g].list[i].id, n+1, "Value of page must be between 0 and 65535.");
+							valid = false;
+						}
+						if(!(temp_s <= 65535 && temp_s >= 0))
+						{
+							ErrorMsg(true,groupset_list[g].list[i].group + ":" + groupset_list[g].list[i].id, n+1, "Value of sector must be between 0 and 65535.");
+							valid = false;
+						}
+						for(size_t al = 0; al < address_list.size(); al++)
+						{
+							if(address_list[al].page == temp_p)
+							{
+								address_list[al].bytes.push_back(temp_s);
+								check = true;
+								break;
+							}
+						}
+						if(!check)
+						{
+							AddressSet temp;
+							temp.page = temp_p;
+							temp.bytes.push_back(temp_s);
+							address_list.push_back(temp);
+						}
+					}else{
+						if(second.empty())
+						{
+							//해당 그룹의 모든 데이터로 연결
+							if(first != groupset_list[g].list[i].group)//자기 자신의 그룹이 아니면
+							{
+								for(size_t tg = 0; tg < group_name_list.size(); tg++)
+								{
+									if(group_name_list[tg] == first)
+									{
+										for(size_t t = 0; t < groupset_list[tg].list.size(); t++)
+										{
+											AddAddressSet(groupset_list[tg].list[t]);
+										}
+									}
+								}
+							}
+							else
+							{
+								ErrorMsg(true, groupset_list[g].list[i].group + ":" + groupset_list[g].list[i].id, n+1, "Try to self-reference group.");
+								valid = false;
+							}
+						}else{
+							//해당 그룹의 특수 데이터로 연결	
+							if(first != groupset_list[g].list[i].group)//자기 자신의 그룹이 아니면
+							{
+								for(size_t tg = 0; tg < group_name_list.size(); tg++)
+								{
+									if(group_name_list[tg] == first)
+									{
+										vector<string> element = split(second,'|');
+										for(size_t te = 0; te < element.size(); te++)
+										{
+											bool exist = false;
+											for(size_t t = 0; t < groupset_list[tg].list.size(); t++)
+											{
+												if(groupset_list[tg].list[t].id==element[te])
+												{
+													AddAddressSet(groupset_list[tg].list[t]);
+													exist = true;
+													break;
+												}
+											}
+											if(!exist)
+											{
+												ErrorMsg(true, groupset_list[g].list[i].group + ":" + groupset_list[g].list[i].id, n+1, "There are no name of '"+ element[te] + "'.");
+												valid = false;
+											}
+										}
+									}
+								}
+							}
+							else
+							{
+								ErrorMsg(true, groupset_list[g].list[i].group + ":" + groupset_list[g].list[i].id, n+1, "Try to self-reference group.");
+								valid = false;
+							}
+						}
+					}
+				}
+			
+
+				if(LOG){
+					cout << "[" << groupset_list[g].list[i].group << ":" << groupset_list[g].list[i].id << "]" << "estimate : " << groupset_list[g].list[i].estimate-16 << endl;
+					for(size_t a = 0; a < address_list.size(); a++)
+					{
+						for(size_t b = 0; b < address_list[a].bytes.size(); b++)
+						{
+							cout << "page : " << address_list[a].page << " / sector : " << address_list[a].bytes[b] << endl;
+						}
+					}
+				}
+
+				for(size_t a = 0 ; a < address_list.size(); a++)
+				{
+					if(address_list[a].bytes.size()>0)
+					{
+						groupset_list[g].list[i].bytes.push_back(USHORT_TRA);
+						groupset_list[g].list[i].bytes.push_back(address_list[a].page);
+					}
+					for(size_t b = 0; b < address_list[a].bytes.size(); b++)
+					{
+						groupset_list[g].list[i].bytes.push_back(address_list[a].bytes[b]);
+					}
+				}
+
+			/*
+			for(size_t l=0; l < groupset_list[g].list[i].bytes.size(); l++)
+			{
+				cout << groupset_list[g].list[i].bytes[l] << ";";
+			}
+			cout << endl;
+			*/
+			}
 		}
 	}
 

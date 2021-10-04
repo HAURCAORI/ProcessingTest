@@ -2,9 +2,11 @@
 #SECTOR=0
 #BEGIN
 [INPUT]
-
+i1[]->group1;n1
+i2[]->group1;
 [OUTPUT]
-
+o1[]
+o2[]
 [group1]
 n1[12.4|12.0],,n2/n3/n4/1;0/group2;n8|n5|n6
 n2[1.0|1.0],,n3/n4
