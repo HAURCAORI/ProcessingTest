@@ -56,11 +56,18 @@ struct AddressSet
 	PAGE page;
 };
 
+struct GroupSet
+{
+	string group;
+	vector<neuronTag> list;
+};
+
 void Processing(const PAGE offset_page, const SECTOR offset_sector);
 vector<Group> vector_group;
 vector<string> group_name_list;// 빠른 검색을 위한 그룹 이름 지정
 vector<neuronTag> neuron_list;
 vector<AddressSet> address_list;
+vector<GroupSet> groupset_list;
 const vector<string> methods = {"", "x","i","o"};
 
 
@@ -212,12 +219,13 @@ bool Mapping(){
 		}
 	}else{
 		ErrorMsg(true,"FILE", 0, "Can't open 'mapping' file.");
-		cout << error << endl;
+		std::cout << error << endl;
 		return false;
 	}
-	cout << error << endl;
+	std::cout << error << endl;
     return true;
 }
+
 
 //++++++++++//
 //함수 정의부
@@ -251,6 +259,81 @@ bool inMethod(string method)
 			return true;
 	}
 	return false;
+}
+
+void CreateAddressSet(const PAGE countpage, const PAGE offset_page)
+{
+	address_list.clear();
+	for(int i = 0; i < (countpage+1);i++)
+	{
+		AddressSet temp;
+		temp.page = (offset_page+i);
+		address_list.push_back(temp);
+	}
+}
+
+bool AddAddressSet(neuronTag tag)
+{
+	bool check = false;
+	for(size_t i = 0; i < address_list.size(); i++)
+	{
+		if(address_list[i].page == tag.page)
+		{
+			address_list[i].bytes.push_back(tag.sector);
+			check = true;
+			break;
+		}
+	}
+	if(check)
+	{
+		return true;
+	}
+	else
+	{
+		AddressSet temp;
+		temp.page = tag.page;
+		temp.bytes.push_back(tag.sector);
+		address_list.push_back(temp);
+		return false;
+	}
+}
+
+bool AssignGroupSet()
+{
+	for(size_t i = 0; i < group_name_list.size(); i++)//목록 생성
+	{
+		GroupSet temp;
+		temp.group = group_name_list[i];
+		groupset_list.push_back(temp);
+	}
+	for(size_t i = 0; i < neuron_list.size(); i++)//목록에 값 기록
+	{
+		for(size_t j = 0 ; j < group_name_list.size(); j++)
+		{
+			if(neuron_list[i].group == group_name_list[j])
+			{
+				bool valid = true;
+				for(size_t k = 0; k < groupset_list[j].list.size(); k++)
+				{
+					if(groupset_list[j].list[k].id==neuron_list[i].id)
+					{
+						valid = false;
+						break;
+					}
+					
+				}
+				if(valid)
+					groupset_list[j].list.push_back(neuron_list[i]);
+				else
+				{
+					ErrorMsg(true,"GROUP", 0, "There are same id '" + neuron_list[i].id + "' in Group '" + neuron_list[i].group +  "'.");
+					return false;
+				}
+				break;
+			}
+		}
+	}
+	return true;
 }
 //----------//
 //함수 정의부
@@ -428,19 +511,130 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 		cout << neuron_list[i].id << "(" << num << ") :" << neuron_list[i].page << "/" << neuron_list[i].sector << endl;
 		
 	}
-	cout <<"p:"<< page << endl;
-	cout <<"s:"<< sector << endl;
-	cout <<"cp:"<< countpage << endl;
-	cout <<"cs:"<< countsector << endl;
+	//cout <<"p:"<< page << endl;
+	//cout <<"s:"<< sector << endl;
+	//cout <<"cp:"<< countpage << endl;
+	//cout <<"cs:"<< countsector << endl;
 	//----------------------//
 	// iv. tag에 주소 기록
 	//----------------------//
-	for(int i = 0; i < (countpage+1);i++)//page별로 저장 => 같은 페이지와 다른 페이지 여부 확인 => 각 페이지에 주소 추가 => 병합
+	if(!AssignGroupSet())
 	{
-		AddressSet temp;
-		temp.page = (offset_page+i);
-		address_list.push_back(temp);
+		ErrorMsg(true,"FILE", 0, "Failed to mapping.");
+		return;
 	}
+	/*
+	for(size_t i = 0 ; i < groupset_list.size(); i++)
+	{
+		cout << "[" << groupset_list[i].group << "]" << endl;
+		for(size_t j = 0; j < groupset_list[i].list.size(); j++)
+		{
+			cout << groupset_list[i].list[j].id << endl;
+		}
+	}
+	*/
+
+	for(size_t g = 0; g < groupset_list.size(); g++)
+	{
+		for(size_t i = 0; i < groupset_list[g].list.size(); i++)
+		{
+			CreateAddressSet(countpage, offset_page);
+			if(groupset_list[g].list[i].stream[1].empty())
+			{
+				vector<string> div = split(groupset_list[g].list[i].stream[2],'/');
+				for(size_t n = 0; n < div.size(); n++)
+				{
+					if(div[n].find(';') != string::npos) //그룹여부는 ';' 유무로 구분
+					{
+						index = div[n].find_first_of(';');
+						string first = div[n].substr(0,index);
+						string second = div[n].substr(index+1);
+						if(isnumber(first) && isnumber(second)){ //숫자쌍은 단일 주소 의미
+
+						}else{
+							//first가 그룹에 속해있는지는 이미 확인했으므로 생략
+							if(second.empty())
+							{
+								//해당 그룹의 모든 데이터로 연결
+								if(first != groupset_list[g].list[i].group)//자기 자신의 그룹이 아니면
+								{
+									for(size_t tg = 0; tg < group_name_list.size(); tg++)
+									{
+										if(group_name_list[tg] == first)
+										{
+											for(size_t t = 0; t < groupset_list[tg].list.size(); t++)
+											{
+												AddAddressSet(groupset_list[tg].list[t]);
+											}
+										}
+									}
+								}
+								else
+								{
+									ErrorMsg(true, groupset_list[g].list[i].group + ":" + groupset_list[g].list[i].id, n+1, "Try to self-reference group.");
+									valid = false;
+								}
+							}else{
+								//해당 그룹의 특수 데이터로 연결
+								bool exist = false;
+								if(first != groupset_list[g].list[i].group)//자기 자신의 그룹이 아니면
+								{
+									for(size_t tg = 0; tg < group_name_list.size(); tg++)
+									{
+										if(group_name_list[tg] == first)
+										{
+											for(size_t t = 0; t < groupset_list[tg].list.size(); t++)
+											{
+												if(groupset_list[tg].list[t].id==second)//second 배열로
+												{
+													AddAddressSet(groupset_list[tg].list[t]);
+													break;
+												}
+											}
+										}
+									}
+								}
+								else
+								{
+									ErrorMsg(true, groupset_list[g].list[i].group + ":" + groupset_list[g].list[i].id, n+1, "Try to self-reference group.");
+									valid = false;
+								}
+							}
+						}
+					}else{
+						//기본 주소로 처리
+						for(size_t t = 0; t < groupset_list[g].list.size(); t++)
+						{
+							if(groupset_list[g].list[t].id == div[n])
+							{
+								if(i==t)
+								{
+									ErrorMsg(true, groupset_list[g].list[i].group + ":" + groupset_list[g].list[i].id, n+1, "Try to self-reference id.");
+									valid = false;
+								}
+								else
+								{
+									AddAddressSet(groupset_list[g].list[t]);
+								}
+							}
+						}
+					}
+				}
+			}
+			else if(groupset_list[g].list[i].stream[1] == "x")
+			{
+
+			}
+		}
+	}
+
+	if(valid == false)
+	{
+		ErrorMsg(true,"FILE", 0, "Failed to mapping.");
+		return;
+	}
+
+/*
 	for(size_t i = 0; i < neuron_list.size(); i++)
 	{
 		if(neuron_list[i].stream[1].empty()) //***기본 지정자***
@@ -489,16 +683,20 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 						}
 					}
 				}else{
-					//기본 주소로 처리
-					for(size_t j = 0; j < address_list.size(); j++)
+					size_t groupIndex;
+					for(size_t t = 0; t < group_name_list.size(); t++)
 					{
-						if(address_list[j].page == neuron_list[i].page)
+
+					}
+					//기본 주소로 처리
+					for(size_t m = 0; m < neuron_list.size(); m++)
+					{
+						if(div[n] == neuron_list[m].id)//div와 같은 이름 찾기
 						{
-							address_list[j].bytes.push_back(neuron_list[i].sector);
+							AddAddressSet(neuron_list[m]);
 							break;
 						}
 					}
-					
 				}
 			}
 		}else if(neuron_list[i].stream[1] == "x") //***next 지정자***
@@ -507,7 +705,7 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 		}
 		//neuron_list[i].bytes = &temp;
 	}
-	
+*/
 
 
 
