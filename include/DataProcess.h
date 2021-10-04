@@ -17,6 +17,7 @@ bool isLoaded(const PAGE page);
 PageFile* getPage(const PAGE page);
 void SpecificDataRead(PAGE page, SECTOR sector);
 bool InsertDataHeader(PAGE page, SECTOR sector, BYTE type);
+bool InsertDataHeader(PAGE page, SECTOR sector, BYTE type, float threshold, float weight);
 bool InsertAddress(PAGE page, SECTOR sector, int offset, BYTES value);
 bool InsertAddressAuto(Neuron* neuron, BYTES value);
 bool ClearData(PAGE page, SECTOR sector);

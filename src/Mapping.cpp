@@ -659,10 +659,7 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 					}
 				}
 			}
-			else if(groupset_list[g].list[i].stream[1] == "x") //
-			{
-
-			}
+			
 
 			if(LOG){
 				cout << "[" << groupset_list[g].list[i].group << ":" << groupset_list[g].list[i].id << "]" << "estimate : " << groupset_list[g].list[i].estimate-16 << endl;
@@ -684,15 +681,21 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 						groupset_list[g].list[i].bytes.push_back(address_list[a].bytes[b]);
 					}
 				}else{
-					groupset_list[g].list[i].bytes.push_back(USHORT_TRA);
-					groupset_list[g].list[i].bytes.push_back(address_list[a].page);
+					if(address_list[a].bytes.size()>0)
+					{
+						groupset_list[g].list[i].bytes.push_back(USHORT_TRA);
+						groupset_list[g].list[i].bytes.push_back(address_list[a].page);
+					}
 					for(size_t b = 0; b < address_list[a].bytes.size(); b++)
 					{
 						groupset_list[g].list[i].bytes.push_back(address_list[a].bytes[b]);
 					}
 				}
 			}
-			groupset_list[g].list[i].bytes.push_back(USHORT_MAX);
+			if(groupset_list[g].list[i].stream[1] != "x")
+			{
+				groupset_list[g].list[i].bytes.push_back(USHORT_MAX);
+			}
 
 			/*
 			for(size_t l=0; l < groupset_list[g].list[i].bytes.size(); l++)
@@ -701,6 +704,7 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 			}
 			cout << endl;
 			*/
+			
 		}
 	}
 
@@ -718,17 +722,61 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 		{
 			PAGE p = groupset_list[g].list[i].page;
 			SECTOR s = groupset_list[g].list[i].sector;
-			InsertDataHeader(p,s,)
+			
+
+			size_t index1 = groupset_list[g].list[i].stream[0].find_first_of('[');
+			size_t index2 = groupset_list[g].list[i].stream[0].find_first_of(']');
+			if(index1 == string::npos || index2 == string::npos)
+			{
+				InsertDataHeader(p,s,TypeDefault());
+			}else{
+				string temp = groupset_list[g].list[i].stream[0].substr(index1+1, index2-index1-1);
+				if(groupset_list[g].list[i].stream[0].find_first_of('|') == string::npos)
+				{
+					InsertDataHeader(p,s,TypeDefault());
+					ErrorMsg(false, groupset_list[g].list[i].group + ":" + groupset_list[g].list[i].id, 0, "Wrong ID property.");
+				}else{
+					vector<string> value = split(temp,'|');
+					if(value.size() == 2)
+					{
+						float threshold = stof(value[0]);
+						float weight = stof(value[1]);
+						InsertDataHeader(p,s,TypeDefault(),threshold,weight);
+					}
+					else
+					{
+						InsertDataHeader(p,s,TypeDefault());
+						ErrorMsg(false, groupset_list[g].list[i].group + ":" + groupset_list[g].list[i].id, 0, "Wrong ID property.");
+					}
+					
+				}
+			}
+			
+			string address = (string)Path + to_string(p);
+			FILE *stream = fopen(address.c_str(), "r+");
+			if(stream) {
+				long pos = SectorUnit * s + 16;
+				for(size_t a = 0; a < groupset_list[g].list[i].bytes.size(); a++)
+				{
+					ffwrite(stream,pos, groupset_list[g].list[i].bytes[a]);
+					pos+=2;
+				}
+			}else
+			{
+				ErrorMsg(true,"FILE", 0, "Failed to open data file.");
+			}
+			
+			fclose(stream);
 		}
 	}
-	
-
 
 	if(valid == false)
 	{
 		ErrorMsg(true,"FILE", 0, "Failed to mapping.");
 		return;
 	}
+
+	cout << "SUCCESS" << endl;
 }
 
 void ErrorMsg(bool type, string code, int index, string message)

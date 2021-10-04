@@ -147,6 +147,36 @@ bool InsertDataHeader(PAGE page, SECTOR sector, BYTE type)
 	}
 }
 
+bool InsertDataHeader(PAGE page, SECTOR sector, BYTE type, float threshold, float weight)
+{
+	NUMBER empty = 0;
+	NUMBER count = 0;
+
+	string address = (string) Path + to_string(page);
+	FILE *stream = fopen(address.c_str(), "r+");
+	if(stream) {
+		long pos = SectorUnit * sector;
+		ffwrite(stream,pos,type);
+		++pos;
+		ffwrite(stream,pos,count);
+		++pos;
+		ffwrite(stream,pos,empty); //priority
+		++pos;
+		ffwrite(stream,pos,empty); //extra
+		++pos;
+		ffwrite(stream, pos, threshold);
+		pos += 4;
+		ffwrite(stream, pos, weight);
+		pos += 4;
+		float temp = 0;
+		ffwrite(stream, pos, temp);
+		fclose(stream);
+		return true;
+	}else{
+		return false;
+	}
+}
+
 bool InsertAddress(PAGE page, SECTOR sector, int offset, BYTES value)
 {
 	string address = (string)Path + to_string(page);
