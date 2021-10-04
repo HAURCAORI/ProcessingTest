@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <string>
 
+#define LOG false
 
 
 class Group
@@ -47,7 +48,7 @@ struct neuronTag
 	vector<string> stream;
 	PAGE page;
 	SECTOR sector = USHORT_MAX;
-	vector<BYTES> *bytes;
+	vector<BYTES> bytes;
 };
 
 struct AddressSet
@@ -126,7 +127,13 @@ bool Mapping(){
 					string temp = str.substr(str.find_first_of('=')+1);
 					if(isnumber(temp))
 					{
-						offset_page = stoi(temp);
+						if(stoi(temp) <= 65535 && stoi(temp) >= 0)
+						{
+							offset_page = stoi(temp);
+						}else{
+							ErrorMsg(true,"FILE", line, "Value of '#PAGE' must be between 0 and 65535.");
+							break;
+						}
 					}
 					else
 					{
@@ -140,7 +147,13 @@ bool Mapping(){
 					string temp = str.substr(str.find_first_of('=')+1);
 					if(isnumber(temp))
 					{
-						offset_sector = stoi(temp);
+						if(stoi(temp) <= 65535 && stoi(temp) >= 0)
+						{
+							offset_sector = stoi(temp);
+						}else{
+							ErrorMsg(true,"FILE", line, "Value of '#SECTOR' must be between 0 and 65535.");
+							break;
+						}
 					}
 					else
 					{
@@ -195,6 +208,7 @@ bool Mapping(){
 				}
 				else if(previous == true)
 				{
+					str.erase(remove(str.begin(), str.end(), ' '), str.end());
 					group.AddItem(str);//Group내의 모든 데이터행을 추가
 				}
 			}
@@ -272,29 +286,15 @@ void CreateAddressSet(const PAGE countpage, const PAGE offset_page)
 	}
 }
 
-bool AddAddressSet(neuronTag tag)
+void AddAddressSet(neuronTag tag)
 {
-	bool check = false;
 	for(size_t i = 0; i < address_list.size(); i++)
 	{
 		if(address_list[i].page == tag.page)
 		{
 			address_list[i].bytes.push_back(tag.sector);
-			check = true;
 			break;
 		}
-	}
-	if(check)
-	{
-		return true;
-	}
-	else
-	{
-		AddressSet temp;
-		temp.page = tag.page;
-		temp.bytes.push_back(tag.sector);
-		address_list.push_back(temp);
-		return false;
 	}
 }
 
@@ -420,7 +420,7 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 							{
 								//해당 그룹의 모든 데이터로 연결
 								estimate += elementCount(first)*2; 
-								estimate += 4; //전환자 + 해당Page 주소
+								estimate += 4; //전환자 + 해당Page 주소 나중에 수정 page가 달라지는 여부는 다르게 판단
 							}else{
 								//해당 그룹의 특수 데이터로 연결
 								size_t c = std::count(second.begin(), second.end(), '|')+1;// |로 주소 구분
@@ -474,7 +474,7 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 		{
 			num = 1;
 			int nn = (neuron_list[i+1].estimate / SectorUnit) + 1;//다음 뉴런의 정보도 고려
-			if((sector + num + nn > USHORT_MAX-1))
+			if((sector + num + nn > USHORT_MAX-2))
 			{
 				page += 1;
 				sector = 0;
@@ -492,7 +492,7 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 		}
 		else
 		{
-			if((sector + num > USHORT_MAX-1)) //65535 주소는 사용할 수 없는 주소니 할당되는 것 방지
+			if((sector + num > USHORT_MAX-2)) //65535 주소는 사용할 수 없는 주소니 할당되는 것 방지
 			{
 				page += 1;
 				sector = 0;
@@ -508,13 +508,11 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 			sector += num;
 			countsector += num;
 		}
-		cout << neuron_list[i].id << "(" << num << ") :" << neuron_list[i].page << "/" << neuron_list[i].sector << endl;
+		if(LOG)
+			cout << neuron_list[i].id << "(" << num << ") :" << neuron_list[i].page << "/" << neuron_list[i].sector << endl;
 		
 	}
-	//cout <<"p:"<< page << endl;
-	//cout <<"s:"<< sector << endl;
-	//cout <<"cp:"<< countpage << endl;
-	//cout <<"cs:"<< countsector << endl;
+
 	//----------------------//
 	// iv. tag에 주소 기록
 	//----------------------//
@@ -523,34 +521,55 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 		ErrorMsg(true,"FILE", 0, "Failed to mapping.");
 		return;
 	}
-	/*
-	for(size_t i = 0 ; i < groupset_list.size(); i++)
-	{
-		cout << "[" << groupset_list[i].group << "]" << endl;
-		for(size_t j = 0; j < groupset_list[i].list.size(); j++)
-		{
-			cout << groupset_list[i].list[j].id << endl;
-		}
-	}
-	*/
 
 	for(size_t g = 0; g < groupset_list.size(); g++)
 	{
 		for(size_t i = 0; i < groupset_list[g].list.size(); i++)
 		{
 			CreateAddressSet(countpage, offset_page);
-			if(groupset_list[g].list[i].stream[1].empty())
+			if(groupset_list[g].list[i].stream[1].empty()) // 기본 생성자
 			{
 				vector<string> div = split(groupset_list[g].list[i].stream[2],'/');
 				for(size_t n = 0; n < div.size(); n++)
 				{
+					if(div[n].empty())
+						continue;
+
 					if(div[n].find(';') != string::npos) //그룹여부는 ';' 유무로 구분
 					{
 						index = div[n].find_first_of(';');
 						string first = div[n].substr(0,index);
 						string second = div[n].substr(index+1);
 						if(isnumber(first) && isnumber(second)){ //숫자쌍은 단일 주소 의미
-
+							bool check = false;
+							int temp_p = stoi(first);
+							int temp_s = stoi(second);
+							if(!(temp_p <= 65535 && temp_p >= 0))
+							{
+								ErrorMsg(true,groupset_list[g].list[i].group + ":" + groupset_list[g].list[i].id, n+1, "Value of page must be between 0 and 65535.");
+								valid = false;
+							}
+							if(!(temp_s <= 65535 && temp_s >= 0))
+							{
+								ErrorMsg(true,groupset_list[g].list[i].group + ":" + groupset_list[g].list[i].id, n+1, "Value of sector must be between 0 and 65535.");
+								valid = false;
+							}
+							for(size_t al = 0; al < address_list.size(); al++)
+							{
+								if(address_list[al].page == temp_p)
+								{
+									address_list[al].bytes.push_back(temp_s);
+									check = true;
+									break;
+								}
+							}
+							if(!check)
+							{
+								AddressSet temp;
+								temp.page = temp_p;
+								temp.bytes.push_back(temp_s);
+								address_list.push_back(temp);
+							}
 						}else{
 							//first가 그룹에 속해있는지는 이미 확인했으므로 생략
 							if(second.empty())
@@ -575,20 +594,30 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 									valid = false;
 								}
 							}else{
-								//해당 그룹의 특수 데이터로 연결
-								bool exist = false;
+								//해당 그룹의 특수 데이터로 연결	
 								if(first != groupset_list[g].list[i].group)//자기 자신의 그룹이 아니면
 								{
 									for(size_t tg = 0; tg < group_name_list.size(); tg++)
 									{
 										if(group_name_list[tg] == first)
 										{
-											for(size_t t = 0; t < groupset_list[tg].list.size(); t++)
+											vector<string> element = split(second,'|');
+											for(size_t te = 0; te < element.size(); te++)
 											{
-												if(groupset_list[tg].list[t].id==second)//second 배열로
+												bool exist = false;
+												for(size_t t = 0; t < groupset_list[tg].list.size(); t++)
 												{
-													AddAddressSet(groupset_list[tg].list[t]);
-													break;
+													if(groupset_list[tg].list[t].id==element[te])
+													{
+														AddAddressSet(groupset_list[tg].list[t]);
+														exist = true;
+														break;
+													}
+												}
+												if(!exist)
+												{
+													ErrorMsg(true, groupset_list[g].list[i].group + ":" + groupset_list[g].list[i].id, n+1, "There are no name of '"+ element[te] + "'.");
+													valid = false;
 												}
 											}
 										}
@@ -603,118 +632,103 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 						}
 					}else{
 						//기본 주소로 처리
+						bool check = false;
 						for(size_t t = 0; t < groupset_list[g].list.size(); t++)
 						{
 							if(groupset_list[g].list[t].id == div[n])
 							{
+								check = true;
 								if(i==t)
 								{
 									ErrorMsg(true, groupset_list[g].list[i].group + ":" + groupset_list[g].list[i].id, n+1, "Try to self-reference id.");
-									valid = false;
+									valid = false;	
+									break;
 								}
 								else
 								{
 									AddAddressSet(groupset_list[g].list[t]);
+									break;
 								}
 							}
+						}
+						if(!check)
+						{
+							ErrorMsg(true, groupset_list[g].list[i].group + ":" + groupset_list[g].list[i].id, n+1, "There is no name of '" + div[n] + "'.");
+							valid = false;
 						}
 					}
 				}
 			}
-			else if(groupset_list[g].list[i].stream[1] == "x")
+			else if(groupset_list[g].list[i].stream[1] == "x") //
 			{
 
 			}
+
+			if(LOG){
+				cout << "[" << groupset_list[g].list[i].group << ":" << groupset_list[g].list[i].id << "]" << "estimate : " << groupset_list[g].list[i].estimate-16 << endl;
+				for(size_t a = 0; a < address_list.size(); a++)
+				{
+					for(size_t b = 0; b < address_list[a].bytes.size(); b++)
+					{
+						cout << "page : " << address_list[a].page << " / sector : " << address_list[a].bytes[b] << endl;
+					}
+				}
+			}
+
+			for(size_t a = 0 ; a < address_list.size(); a++)
+			{
+				if(groupset_list[g].list[i].page == address_list[a].page)
+				{
+					for(size_t b = 0; b < address_list[a].bytes.size(); b++)
+					{
+						groupset_list[g].list[i].bytes.push_back(address_list[a].bytes[b]);
+					}
+				}else{
+					groupset_list[g].list[i].bytes.push_back(USHORT_TRA);
+					groupset_list[g].list[i].bytes.push_back(address_list[a].page);
+					for(size_t b = 0; b < address_list[a].bytes.size(); b++)
+					{
+						groupset_list[g].list[i].bytes.push_back(address_list[a].bytes[b]);
+					}
+				}
+			}
+			groupset_list[g].list[i].bytes.push_back(USHORT_MAX);
+
+			/*
+			for(size_t l=0; l < groupset_list[g].list[i].bytes.size(); l++)
+			{
+				cout << groupset_list[g].list[i].bytes[l] << ";";
+			}
+			cout << endl;
+			*/
 		}
 	}
+
+
+	//----------------------//
+	// v. 파일에 데이터 기록
+	//----------------------//
+	for(PAGE i = 0; i <= countpage; i++)
+	{
+		CreateEmptyFile(i+offset_page);
+	}
+	for(size_t g = 0; g < groupset_list.size(); g++)
+	{
+		for(size_t i = 0; i < groupset_list[g].list.size(); i++)
+		{
+			PAGE p = groupset_list[g].list[i].page;
+			SECTOR s = groupset_list[g].list[i].sector;
+			InsertDataHeader(p,s,)
+		}
+	}
+	
+
 
 	if(valid == false)
 	{
 		ErrorMsg(true,"FILE", 0, "Failed to mapping.");
 		return;
 	}
-
-/*
-	for(size_t i = 0; i < neuron_list.size(); i++)
-	{
-		if(neuron_list[i].stream[1].empty()) //***기본 지정자***
-		{
-			vector<string> div = split(neuron_list[i].stream[2],'/');
-			for(size_t n = 0; n < div.size(); n++)
-			{
-				if(div[n].find(';') != string::npos) //그룹여부는 ';' 유무로 구분
-				{
-					index = div[n].find_first_of(';');
-					string first = div[n].substr(0,index);
-					string second = div[n].substr(index+1);
-					if(isnumber(first) && isnumber(second)){ //숫자쌍은 단일 주소 의미
-						
-					}else{
-						//first가 그룹에 속해있는지는 이미 확인했으므로 생략
-						if(second.empty())
-						{
-							//해당 그룹의 모든 데이터로 연결
-							for(size_t j = 0; j < neuron_list.size(); j++)
-							{
-								if(neuron_list[j].group == first)
-								{
-									if(i!=j)//자기 그룹은 참조 x
-									{
-										for(size_t k = 0; k < address_list.size(); k++)
-										{
-											if(neuron_list[j].page == address_list[k].page)
-											{
-												address_list[k].bytes.push_back(neuron_list[j].sector);
-												break;
-											}
-										}
-										 neuron_list[j].sector;
-										 continue;
-									}
-									else
-									{
-										//에러 발생
-									}
-								}
-							}
-						}else{
-							//해당 그룹의 특수 데이터로 연결
-							
-						}
-					}
-				}else{
-					size_t groupIndex;
-					for(size_t t = 0; t < group_name_list.size(); t++)
-					{
-
-					}
-					//기본 주소로 처리
-					for(size_t m = 0; m < neuron_list.size(); m++)
-					{
-						if(div[n] == neuron_list[m].id)//div와 같은 이름 찾기
-						{
-							AddAddressSet(neuron_list[m]);
-							break;
-						}
-					}
-				}
-			}
-		}else if(neuron_list[i].stream[1] == "x") //***next 지정자***
-		{
-			
-		}
-		//neuron_list[i].bytes = &temp;
-	}
-*/
-
-
-
-	/*
-	for(size_t i = 0; i < neuron_list.size(); i++)
-	{
-		cout << neuron_list[i].group << "/" << neuron_list[i].id << endl;
-	}
-	*/
 }
 
 void ErrorMsg(bool type, string code, int index, string message)
@@ -738,4 +752,13 @@ void ErrorMsg(bool type, string code, int index, string message)
 		error.append(message);
 		error.append("\n");
 	}
-}
+}	/*
+	for(size_t i = 0 ; i < groupset_list.size(); i++)
+	{
+		cout << "[" << groupset_list[i].group << "]" << endl;
+		for(size_t j = 0; j < groupset_list[i].list.size(); j++)
+		{
+			cout << groupset_list[i].list[j].id << endl;
+		}
+	}
+	*/

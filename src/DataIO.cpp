@@ -18,6 +18,29 @@ void CreateEmptyFile(const PAGE page)
 	}
 }
 
+bool DeleteFile(const PAGE page)
+{
+	string address = (string) Path + to_string(page);
+	if(remove(address.c_str())!=0)
+	{
+		return false;
+	}
+	else
+	{
+		return true;
+	}
+	
+}
+
+void DeleteAllFile()
+{
+	for(int i = 0; i <= USHORT_MAX; i++)
+	{
+		string address = (string) Path + to_string(i);
+		remove(address.c_str());
+	}
+}
+
 bool LoadFile(const PAGE page)
 {
 	if(!isLoaded(page))
@@ -97,7 +120,7 @@ bool InsertDataHeader(PAGE page, SECTOR sector, BYTE type)
 	NUMBER empty = 0;
 	NUMBER count = 0;
 
-	string address = (string)Path + "0";
+	string address = (string) Path + to_string(page);
 	FILE *stream = fopen(address.c_str(), "r+");
 	if(stream) {
 		long pos = SectorUnit * sector;
@@ -126,7 +149,7 @@ bool InsertDataHeader(PAGE page, SECTOR sector, BYTE type)
 
 bool InsertAddress(PAGE page, SECTOR sector, int offset, BYTES value)
 {
-	string address = (string)Path + "0";
+	string address = (string)Path + to_string(page);
 	FILE *stream = fopen(address.c_str(), "r+");
 	if(stream) {
 		long pos = SectorUnit * sector + offset;

@@ -1,6 +1,7 @@
 #pragma once
 #include "Struct.h"
 #include "Calculate.h"
+#include "DataProcess.h"
 
 using namespace std;
 

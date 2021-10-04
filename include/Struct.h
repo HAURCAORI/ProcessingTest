@@ -9,6 +9,7 @@
 #define NeuronValueSize 12 //BYTE
 #define Path "resource/"
 #define USHORT_MAX 65535
+#define USHORT_TRA 65534
 
 typedef unsigned char BYTE;
 typedef unsigned char BIT;

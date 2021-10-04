@@ -9,6 +9,8 @@ using namespace std;
 
 //함수 선언부 (IO)
 void CreateEmptyFile(const PAGE page);
+bool DeleteFile(const PAGE page);
+void DeleteAllFile();
 bool LoadFile(const PAGE page);
 bool UnloadFile(const PAGE page);
 bool isLoaded(const PAGE page);

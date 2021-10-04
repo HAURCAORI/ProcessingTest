@@ -6,12 +6,13 @@
 [OUTPUT]
 
 [group1]
-n1[12.4|12.0],,n2/n3/1321;12312/group2;n1|n2|n3/group2;
-n2[],,n1/n3
-n3,,n1
+n1[12.4|12.0],,n2/n3/n4/1;0/group2;n8|n5|n6
+n2[],,n3/n4
+n3,,group2;
+n4,,
 [group2]
-n1[1.0|2.0],,group1;n2
-n3,,n1
-n4,x,n1/group1;/group1;
-n5,,n1
+n5[1.0|2.0],,
+n6,,
+n7,,
+n8,,
 #END
