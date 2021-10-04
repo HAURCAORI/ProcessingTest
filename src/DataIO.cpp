@@ -5,15 +5,42 @@ vector<PageFile> pfile;
 
 void CreateEmptyFile(const PAGE page)
 {
-    vector<char> empty(1024, 0);
-	string address = (string) Path + to_string(page);
-	ofstream ofs(address, ios::binary | ios::out);
-
-	for (int i = 0; i < SectorSize; i++)
+	vector<char> empty(1024, 0);
+	if(page == USHORT_INPUT)
 	{
-		if (!ofs.write(&empty[0], empty.size()))
+		string address = (string) Path + "INPUT";
+		ofstream ofs(address, ios::binary | ios::out);
+
+		for (int i = 0; i < SectorSize; i++)
 		{
-			cout << "problem writing to file" << endl;
+			if (!ofs.write(&empty[0], empty.size()))
+			{
+				cout << "problem writing to file" << endl;
+			}
+		}
+	}else if (page == USHORT_OUTPUT)
+	{
+		string address = (string) Path + "OUTPUT";
+		ofstream ofs(address, ios::binary | ios::out);
+
+		for (int i = 0; i < SectorSize; i++)
+		{
+			if (!ofs.write(&empty[0], empty.size()))
+			{
+				cout << "problem writing to file" << endl;
+			}
+		}
+	}else
+	{
+		string address = (string) Path + to_string(page);
+		ofstream ofs(address, ios::binary | ios::out);
+
+		for (int i = 0; i < SectorSize; i++)
+		{
+			if (!ofs.write(&empty[0], empty.size()))
+			{
+				cout << "problem writing to file" << endl;
+			}
 		}
 	}
 }
@@ -119,8 +146,14 @@ bool InsertDataHeader(PAGE page, SECTOR sector, BYTE type)
 {
 	NUMBER empty = 0;
 	NUMBER count = 0;
-
-	string address = (string) Path + to_string(page);
+	string address;
+	if (page == USHORT_INPUT)
+		address = (string) Path + "INPUT";
+	else if (page == USHORT_OUTPUT)
+		address = (string) Path + "OUTPUT";
+	else
+		address = (string) Path + to_string(page);
+		
 	FILE *stream = fopen(address.c_str(), "r+");
 	if(stream) {
 		long pos = SectorUnit * sector;
@@ -145,6 +178,7 @@ bool InsertDataHeader(PAGE page, SECTOR sector, BYTE type)
 	}else{
 		return false;
 	}
+	
 }
 
 bool InsertDataHeader(PAGE page, SECTOR sector, BYTE type, float threshold, float weight)

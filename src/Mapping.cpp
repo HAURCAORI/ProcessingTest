@@ -631,13 +631,13 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 		}
 		else if(neuron_list[i].group == "INPUT")
 		{
-			neuron_list[i].page = USHORT_MAX;
+			neuron_list[i].page = USHORT_INPUT;
 			neuron_list[i].sector = sector_input;
 			sector_input += num;
 		}
 		else if(neuron_list[i].group == "OUTPUT")
 		{
-			neuron_list[i].page = USHORT_MAX;
+			neuron_list[i].page = USHORT_OUTPUT;
 			neuron_list[i].sector = sector_output;
 			sector_output += 2;
 		}
@@ -970,7 +970,8 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 						groupset_list[g].list[i].bytes.push_back(address_list[a].bytes[b]);
 					}
 				}
-
+				groupset_list[g].list[i].bytes.push_back(USHORT_MAX);
+				
 			/*
 			for(size_t l=0; l < groupset_list[g].list[i].bytes.size(); l++)
 			{
@@ -986,12 +987,73 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 	//----------------------//
 	// v. 파일에 데이터 기록
 	//----------------------//
+	CreateEmptyFile(USHORT_INPUT);
+	CreateEmptyFile(USHORT_OUTPUT);
 	for(PAGE i = 0; i <= countpage; i++)
 	{
 		CreateEmptyFile(i+offset_page);
 	}
+
 	for(size_t g = 0; g < groupset_list.size(); g++)
 	{
+		if(groupset_list[g].group == "INPUT")
+		{
+			
+			for(size_t i = 0; i < groupset_list[g].list.size(); i++)
+			{
+				PAGE p = USHORT_INPUT;
+				SECTOR s = groupset_list[g].list[i].sector;
+
+				size_t index1 = groupset_list[g].list[i].stream[0].find_first_of('[');
+				size_t index2 = groupset_list[g].list[i].stream[0].find_first_of(']');
+				if(index1 == string::npos || index2 == string::npos)
+				{
+					InsertDataHeader(p,s,TypeDefault());
+				}else{
+					string temp = groupset_list[g].list[i].stream[0].substr(index1+1, index2-index1-1);
+					InsertDataHeader(p,s,TypeDefault());
+				}
+				
+				string address = (string)Path + "INPUT";
+				FILE *stream = fopen(address.c_str(), "r+");
+				if(stream) {
+					long pos = SectorUnit * s + 16;
+					for(size_t a = 0; a < groupset_list[g].list[i].bytes.size(); a++)
+					{
+						ffwrite(stream,pos, groupset_list[g].list[i].bytes[a]);
+						pos+=2;
+					}
+				}else{
+					ErrorMsg(true,"FILE", 0, "Failed to open data file.");
+				}
+
+				fclose(stream);
+				
+			}
+			
+		}
+		else if (groupset_list[g].group == "OUTPUT")
+		{
+			
+			for(size_t i = 0; i < groupset_list[g].list.size(); i++)
+			{	
+				PAGE p = USHORT_OUTPUT;
+				SECTOR s = groupset_list[g].list[i].sector;
+
+				size_t index1 = groupset_list[g].list[i].stream[0].find_first_of('[');
+				size_t index2 = groupset_list[g].list[i].stream[0].find_first_of(']');
+				if(index1 == string::npos || index2 == string::npos)
+				{
+					InsertDataHeader(p,s,TypeDefault());
+				}else{
+					string temp = groupset_list[g].list[i].stream[0].substr(index1+1, index2-index1-1);
+					InsertDataHeader(p,s,TypeDefault());
+				}
+			}
+			
+		}
+		else
+		{
 		for(size_t i = 0; i < groupset_list[g].list.size(); i++)
 		{
 			PAGE p = groupset_list[g].list[i].page;
@@ -1041,6 +1103,7 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 			}
 			
 			fclose(stream);
+		}
 		}
 	}
 

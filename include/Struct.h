@@ -10,6 +10,8 @@
 #define Path "resource/"
 #define USHORT_MAX 65535
 #define USHORT_TRA 65534
+#define USHORT_INPUT 65535 //PAGE의 경우
+#define USHORT_OUTPUT 65534 //PAGE의 경우
 
 typedef unsigned char BYTE;
 typedef unsigned char BIT;
