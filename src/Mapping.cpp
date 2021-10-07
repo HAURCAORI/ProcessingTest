@@ -1008,10 +1008,10 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 				size_t index2 = groupset_list[g].list[i].stream[0].find_first_of(']');
 				if(index1 == string::npos || index2 == string::npos)
 				{
-					InsertDataHeader(p,s,TypeDefault());
+					InsertDataHeader(p,s,TypeDefault(),groupset_list[g].list[i].bytes.size() );
 				}else{
 					string temp = groupset_list[g].list[i].stream[0].substr(index1+1, index2-index1-1);
-					InsertDataHeader(p,s,TypeDefault());
+					InsertDataHeader(p,s,TypeDefault(), groupset_list[g].list[i].bytes.size());
 				}
 				
 				string address = (string)Path + "INPUT";
@@ -1044,10 +1044,10 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 				size_t index2 = groupset_list[g].list[i].stream[0].find_first_of(']');
 				if(index1 == string::npos || index2 == string::npos)
 				{
-					InsertDataHeader(p,s,TypeDefault());
+					InsertDataHeader(p,s,TypeDefault(), groupset_list[g].list[i].bytes.size());
 				}else{
 					string temp = groupset_list[g].list[i].stream[0].substr(index1+1, index2-index1-1);
-					InsertDataHeader(p,s,TypeDefault());
+					InsertDataHeader(p,s,TypeDefault(), groupset_list[g].list[i].bytes.size());
 				}
 			}
 			
@@ -1064,12 +1064,12 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 			size_t index2 = groupset_list[g].list[i].stream[0].find_first_of(']');
 			if(index1 == string::npos || index2 == string::npos)
 			{
-				InsertDataHeader(p,s,TypeDefault());
+				InsertDataHeader(p,s,TypeDefault(), groupset_list[g].list[i].bytes.size());
 			}else{
 				string temp = groupset_list[g].list[i].stream[0].substr(index1+1, index2-index1-1);
 				if(groupset_list[g].list[i].stream[0].find_first_of('|') == string::npos)
 				{
-					InsertDataHeader(p,s,TypeDefault());
+					InsertDataHeader(p,s,TypeDefault(), groupset_list[g].list[i].bytes.size());
 					ErrorMsg(false, groupset_list[g].list[i].group + ":" + groupset_list[g].list[i].id, 0, "Wrong ID property.");
 				}else{
 					vector<string> value = split(temp,'|');
@@ -1077,11 +1077,11 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 					{
 						float threshold = stof(value[0]);
 						float weight = stof(value[1]);
-						InsertDataHeader(p,s,TypeDefault(),threshold,weight);
+						InsertDataHeader(p,s,TypeDefault(), groupset_list[g].list[i].bytes.size(),threshold,weight);
 					}
 					else
 					{
-						InsertDataHeader(p,s,TypeDefault());
+						InsertDataHeader(p,s,TypeDefault(), groupset_list[g].list[i].bytes.size());
 						ErrorMsg(false, groupset_list[g].list[i].group + ":" + groupset_list[g].list[i].id, 0, "Wrong ID property.");
 					}
 					

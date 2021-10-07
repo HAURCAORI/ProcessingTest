@@ -46,11 +46,14 @@ struct Neuron
 
     NUMBER count;// equals to address count(except Header) [per 2bytes]
     NUMBER priority; //통계를 위한 값
-    NUMBER extra; //통계를 위한 값 불필요한 경우 향후 struct에서 삭제
+    NUMBER effective; //통계를 위한 값 불필요한 경우 향후 struct에서 삭제
     //Value
     float threshold;
     float weight;
     float temp;
+    //ActiveNeuronSet
+    //int set_id;
+    //int set_count;
     //Address
     BYTES address[0]; //flexible array member
 };

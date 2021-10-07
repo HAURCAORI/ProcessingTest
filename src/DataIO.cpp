@@ -142,10 +142,9 @@ void SpecificDataRead(PAGE page, SECTOR sector)
 	}
 }
 
-bool InsertDataHeader(PAGE page, SECTOR sector, BYTE type)
+bool InsertDataHeader(PAGE page, SECTOR sector, BYTE type, NUMBER count)
 {
 	NUMBER empty = 0;
-	NUMBER count = 0;
 	string address;
 	if (page == USHORT_INPUT)
 		address = (string) Path + "INPUT";
@@ -181,11 +180,9 @@ bool InsertDataHeader(PAGE page, SECTOR sector, BYTE type)
 	
 }
 
-bool InsertDataHeader(PAGE page, SECTOR sector, BYTE type, float threshold, float weight)
+bool InsertDataHeader(PAGE page, SECTOR sector, BYTE type,  NUMBER count, float threshold, float weight)
 {
 	NUMBER empty = 0;
-	NUMBER count = 0;
-
 	string address = (string) Path + to_string(page);
 	FILE *stream = fopen(address.c_str(), "r+");
 	if(stream) {

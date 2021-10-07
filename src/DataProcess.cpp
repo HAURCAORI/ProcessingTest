@@ -2,12 +2,16 @@
 
 vector<ActiveNeuron> list_neuron;
 
-float SuspendTime = 1000;
+const float DELTA_TIME = 1000;//ms
+const float SUSPEND_TIME = 1000;
+int set_id_increment = 0;
 
-bool Load(PAGE page, SECTOR sector, Signal signal)
+bool Load(PAGE page, SECTOR sector, Signal signal, Neuron* previous)
 {
     FILE *stream = getPage(page)->stream;
     long pos = SectorUnit * sector;
+    float value;
+    float delta;
 
     BYTE ttype;
     ffread(stream, pos, ttype);
@@ -25,21 +29,46 @@ bool Load(PAGE page, SECTOR sector, Signal signal)
             neuron->type = ttype;
             neuron->count = tsize;
             ++pos;
-            neuron->priority = UpDownData(stream, pos, true);//fread(&neuron->priority, sizeof(NUMBER), 1, stream);
-            ++pos;
-            neuron->extra = UpDownData(stream, pos, true);//extra 증가
-            ++pos;
+            long pos_temp = pos; //temp = priority
+            pos+=2;
+            /*
+            
+            */
+
             ffread(stream, pos, neuron->threshold);
             pos += 4;
             ffread(stream, pos, neuron->weight);
             pos += 4;
             ffread(stream, pos, neuron->temp);
             
+            //----------
+            // 신호 연산
+            //----------
+            value = neuron->weight * signal.value;
+            delta = value - neuron->threshold;
+            if(value > 1)
+                value = 1;
 
+            if(neuron->temp < value)
+            {
+                neuron->temp = value;
+                ffwrite(stream, pos, value);
+            }
 
-            ActiveNeuron nactive = {neuron,(float) clock(),FlagGen()};
+            ActiveNeuron nactive = {neuron,(float) clock()-DELTA_TIME*delta,FlagGen()};
+
+            if(neuron->temp > neuron->threshold)
+            {
+                neuron->priority = UpDownData(stream, pos_temp, true);
+                pos_temp++;
+                neuron->effective = UpDownData(stream, pos_temp, true);//effective 증가
+
+            }else{
+                neuron->priority = UpDownData(stream, pos_temp, true);
+            }
+
             list_neuron.push_back(nactive);
-
+            
             //InsertAddressAuto(neuron, 2);
 
 
@@ -67,7 +96,7 @@ bool UnloadProcess()
     vector<ActiveNeuron>::iterator iter = list_neuron.begin();
 	for (; iter != list_neuron.end(); )
 	{
-		if (difftime(clock(), iter->timestamp) > SuspendTime)
+		if (difftime(clock(), iter->timestamp) > SUSPEND_TIME)
 		{
 			UnloadNeuron(iter->neuron);
             free(iter->neuron);
