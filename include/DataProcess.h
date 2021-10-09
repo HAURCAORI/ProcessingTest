@@ -31,7 +31,7 @@ BYTE PropertyGen();
 BYTE FlagGen();
 
 //함수 처리부 (Process)
-bool Load(PAGE page, SECTOR sector, Signal signal, Neuron* previous);
+bool Load(PAGE page, SECTOR sector, Signal* signal, Neuron* previous);
 bool UnloadProcess();
 void ShowProcess();
 bool UnloadNeuron(Neuron *neuron);

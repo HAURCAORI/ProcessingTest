@@ -2,6 +2,29 @@
 #include <fstream>
 
 vector<PageFile> pfile;
+PageFile pin;
+PageFile pout;
+
+bool Initialize()
+{
+	string address = (string)Path + "INPUT";
+	FILE* streamin = fopen(address.c_str(), "r+");
+	if(streamin) {
+		return false;
+	}
+	pin.stream = streamin;
+	pin.page = USHORT_INPUT;
+
+	address = (string)Path + "OUTPUT";
+	FILE* streamout = fopen(address.c_str(), "r+");
+	if(streamin) {
+		return false;
+	}
+	pout.stream = streamout;
+	pout.page = USHORT_OUTPUT;
+
+	return true;
+}
 
 void CreateEmptyFile(const PAGE page)
 {
@@ -72,7 +95,7 @@ bool LoadFile(const PAGE page)
 {
 	if(!isLoaded(page))
 	{	
-		string address = (string)Path + "0";
+		string address = (string)Path + to_string(page);
 		FILE *stream = fopen(address.c_str(), "r+");
 		if(!stream) {
 			return false;
@@ -113,21 +136,33 @@ bool isLoaded(const PAGE page)
 
 PageFile* getPage(const PAGE page)
 {
-	for (vector<PageFile>::size_type i = 0; i < pfile.size();i++) {
-        if (pfile[i].page == page)
-		{
-            return &pfile[i];
-		}
-    }
-	if(LoadFile(page))
-		return &pfile[pfile.size()-1];
+	if (page == USHORT_INPUT)
+	{
+		return &pin;
+	}
+	else if (page == USHORT_OUTPUT)
+	{
+		return &pout;
+	}
 	else
-		return NULL;
+	{
+		for (vector<PageFile>::size_type i = 0; i < pfile.size(); i++)
+		{
+			if (pfile[i].page == page)
+			{
+				return &pfile[i];
+			}
+		}
+		if (LoadFile(page))
+			return &pfile[pfile.size() - 1];
+		else
+			return NULL;
+	}
 }
 
 void SpecificDataRead(PAGE page, SECTOR sector)
 {
-	string address = (string)Path + "0";
+	string address = (string)Path + to_string(page);
 	FILE *stream = fopen(address.c_str(), "r+");
 	if(stream) {
 		long pos = SectorUnit * sector;
@@ -247,7 +282,7 @@ bool InsertAddressAuto(Neuron* neuron, BYTES value)
 
 bool ClearData(PAGE page, SECTOR sector)
 {
-	string address = (string)Path + "0";
+	string address = (string)Path + to_string(page);
 	FILE *stream = fopen(address.c_str(), "r+");
 	float empty = 0;
 	if(stream) {

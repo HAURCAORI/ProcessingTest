@@ -5,8 +5,8 @@
 #include <algorithm>
 #include <string>
 
+#define TAG true
 #define LOG false
-
 
 class Group
 {
@@ -641,7 +641,7 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 			neuron_list[i].sector = sector_output;
 			sector_output += 2;
 		}
-		if(LOG)
+		if(TAG)
 			cout << neuron_list[i].id << "(" << num << ") :" << neuron_list[i].page << "/" << neuron_list[i].sector << endl;
 	}
 

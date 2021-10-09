@@ -6,6 +6,8 @@
 int main()
 {
     Mapping();
+    Signal s = SignalGen(1.0);
+    Load(0,0,&s,nullptr);
     //CreateEmptyFile(0);
     //InsertDataHeader(0,0,TypeDefault());
     //InsertDataHeader(0,1,TypeDefault());
@@ -14,7 +16,7 @@ int main()
 
 
     /*
-    Signal s = SignalGen(1.0);
+    
     Load(0,0,s);
 
     //ClearData(0,1);
