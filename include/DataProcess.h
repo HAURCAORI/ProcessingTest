@@ -22,7 +22,7 @@ bool InsertDataHeader(PAGE page, SECTOR sector, BYTE type, NUMBER count, float t
 bool InsertAddress(PAGE page, SECTOR sector, int offset, BYTES value);
 bool InsertAddressAuto(Neuron* neuron, BYTES value);
 bool ClearData(PAGE page, SECTOR sector);
-NUMBER UpDownData(FILE *stream, long pos, bool increase);
+NUMBER UpDownData(FILE* &stream, long pos, bool increase);
 
 bool isAvailableAddress(FILE *stream, long pos);
 BYTE TypeGen(bool isValide, bool isTerminus);
@@ -38,10 +38,10 @@ void ShowProcess();
 bool UnloadNeuron(Neuron *neuron);
 
 //Thread
-void ffread(FILE* stream, long& pos, BYTE& sender);
-void ffread(FILE* stream, long& pos, BYTES& sender);
-void ffread(FILE* stream, long& pos, float& sender);
-void ffwrite(FILE* stream, long& pos, BYTE& sender);
-void ffwrite(FILE* stream, long& pos, BYTES& sender);
-void ffwrite(FILE* stream, long& pos, float& sender);
+void ffread(FILE* &stream, long& pos, BYTE& sender);
+void ffread(FILE* &stream, long& pos, BYTES& sender);
+void ffread(FILE* &stream, long& pos, float& sender);
+void ffwrite(FILE* &stream, long& pos, BYTE& sender);
+void ffwrite(FILE* &stream, long& pos, BYTES& sender);
+void ffwrite(FILE* &stream, long& pos, float& sender);
 void CycleThread();

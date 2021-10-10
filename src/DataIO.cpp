@@ -327,7 +327,7 @@ bool isAvailableAddress(FILE *stream, long pos)
 	}
 }
 
-NUMBER UpDownData(FILE *stream, long pos, bool increase)
+NUMBER UpDownData(FILE* &stream, long pos, bool increase)
 {
 	NUMBER count;
 	if(increase)

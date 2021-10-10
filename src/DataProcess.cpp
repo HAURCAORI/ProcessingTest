@@ -3,6 +3,7 @@
 #define LOG_ELAPSED_TIME false
 #define LOG_LOAD false
 #include <chrono>
+#include <thread>
 
 vector<ActiveNeuron> list_neuron;
 //vector<ActiveNeuron> list_threshold_neuron;
@@ -25,7 +26,7 @@ bool Load(PAGE page, SECTOR sector, Signal* signal, Neuron* previous)
             cout << "LOAD : " << page << "/" << sector << " from " << previous->page << "/" << previous->sector << endl;
     #endif
 
-    FILE *stream = getPage(page)->stream;
+    FILE* &stream = getPage(page)->stream;
     long pos = SectorUnit * sector;
     float value;
     float delta;
@@ -79,7 +80,7 @@ bool Load(PAGE page, SECTOR sector, Signal* signal, Neuron* previous)
 
         signal->value = value;
 
-        cout <<  sector  << ":" <<  value << endl;
+        //cout <<  sector  << ":" <<  value << endl;
 
         //----------
         // ActiveNeuron 생성
@@ -92,13 +93,18 @@ bool Load(PAGE page, SECTOR sector, Signal* signal, Neuron* previous)
             neuron->priority = UpDownData(stream, pos_temp, true);
             pos_temp++;
             neuron->effective = UpDownData(stream, pos_temp, true); //effective 증가
+            neuron->is_effective = true;
             list_neuron.push_back(nactive);
             valid = true;
         }
         else
         {
             neuron->priority = UpDownData(stream, pos_temp, true);
+            neuron->is_effective = false;
+            list_neuron.push_back(nactive);
+            valid = false;
         }
+
 
         //----------
         // List에 등록
@@ -109,7 +115,7 @@ bool Load(PAGE page, SECTOR sector, Signal* signal, Neuron* previous)
         {
             //cout << "effectiveness : " << effectiveness << endl; //나중에 추가
         }
-
+        
         //InsertAddressAuto(neuron, 2);
         if (valid)
         {
@@ -211,13 +217,21 @@ bool UnloadProcess()
 
 bool UnloadNeuron(Neuron *neuron)
 {
-    FILE *stream = neuron->stream;
-    long pos = SectorUnit * neuron->sector+12;
-    float temp;
-    ffread(stream, pos, temp);
-    if(temp <= neuron->temp) //temp는 현재 뉴런의 temp보다 작거나 같은 경우 0으로 초기화(가장 활성도가 큰 값이 Unload되므로)
+    FILE* &stream = neuron->stream;
+    long pos = SectorUnit * neuron->sector + 2;
+    if(neuron->is_effective)
     {
-        temp = 0;
+        neuron->priority = UpDownData(stream, pos, false);
+        pos++;
+        neuron->effective = UpDownData(stream, pos, false);
+    }else{
+        neuron->priority = UpDownData(stream, pos, false);
+    }
+
+    if(neuron->priority == 0) //temp는 현재 뉴런의 temp보다 작거나 같은 경우 0으로 초기화(가장 활성도가 큰 값이 Unload되므로)
+    {
+        pos = SectorUnit * neuron->sector+12;
+        float temp = 0;
         ffwrite(stream, pos, temp);
     }
     return true;
