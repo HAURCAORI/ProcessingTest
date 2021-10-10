@@ -22,6 +22,7 @@ bool InsertDataHeader(PAGE page, SECTOR sector, BYTE type, NUMBER count, float t
 bool InsertAddress(PAGE page, SECTOR sector, int offset, BYTES value);
 bool InsertAddressAuto(Neuron* neuron, BYTES value);
 bool ClearData(PAGE page, SECTOR sector);
+void SetZero(FILE* &stream, long pos);
 NUMBER UpDownData(FILE* &stream, long pos, bool increase);
 
 bool isAvailableAddress(FILE *stream, long pos);

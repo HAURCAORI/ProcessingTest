@@ -327,6 +327,12 @@ bool isAvailableAddress(FILE *stream, long pos)
 	}
 }
 
+void SetZero(FILE* &stream, long pos)
+{
+	NUMBER temp = 0;
+	ffwrite(stream, pos, temp);
+}
+
 NUMBER UpDownData(FILE* &stream, long pos, bool increase)
 {
 	NUMBER count;
@@ -339,7 +345,10 @@ NUMBER UpDownData(FILE* &stream, long pos, bool increase)
 	else
 	{
 		ffread(stream, pos, count);
-		count--;
+		if(count > 0)
+			count--;
+		else
+			count = 0;
 		ffwrite(stream, pos, count);
 	}
 	return count;

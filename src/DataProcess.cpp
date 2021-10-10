@@ -2,8 +2,10 @@
 
 #define LOG_ELAPSED_TIME false
 #define LOG_LOAD false
+#define EPSILON 0.001
 #include <chrono>
 #include <thread>
+#include <math.h>
 
 vector<ActiveNeuron> list_neuron;
 //vector<ActiveNeuron> list_threshold_neuron;
@@ -11,6 +13,7 @@ vector<ActiveNeuron> list_neuron;
 const float DELTA_TIME = 1000;//ms
 const float SUSPEND_TIME = 1000;
 const float EFFECTIVE_OFFSET = 0.05;
+const NUMBER PRIORITY_CHECK = 10;
 
 bool Load(PAGE page, SECTOR sector, Signal* signal, Neuron* previous)
 {
@@ -71,11 +74,17 @@ bool Load(PAGE page, SECTOR sector, Signal* signal, Neuron* previous)
         delta = value - neuron->threshold;
         if (value > 1)
             value = 1;
+        
+        if (fabs(value) < EPSILON)
+        {
+            free(neuron);
+            return false;
+        }
 
         if (neuron->temp < value)
         {
             neuron->temp = value;
-            //ffwrite(stream, pos, value);
+            ffwrite(stream, pos, value);
         }
 
         signal->value = value;
@@ -88,34 +97,51 @@ bool Load(PAGE page, SECTOR sector, Signal* signal, Neuron* previous)
         bool valid = false;
         ActiveNeuron nactive = {neuron, (float)clock() - DELTA_TIME * delta, FlagGen()};
 
-        if (neuron->temp > neuron->threshold)
+        if (value > neuron->threshold)
         {
             neuron->priority = UpDownData(stream, pos_temp, true);
             pos_temp++;
             neuron->effective = UpDownData(stream, pos_temp, true); //effective 증가
-            neuron->is_effective = true;
+            neuron->is_effective = 1;
             list_neuron.push_back(nactive);
             valid = true;
         }
         else
         {
-            neuron->priority = UpDownData(stream, pos_temp, true);
-            neuron->is_effective = false;
-            list_neuron.push_back(nactive);
-            valid = false;
+            if (neuron->temp > neuron->threshold)
+            {
+                neuron->is_effective = 2;
+                list_neuron.push_back(nactive);
+                valid = true;
+            }
+            else
+            {
+                neuron->priority = UpDownData(stream, pos_temp, true);
+                neuron->is_effective = 0;
+                list_neuron.push_back(nactive);
+                valid = false;
+            }
         }
 
+        //----------
+        // priority 및 effective 계산
+        //----------
 
-        //----------
-        // List에 등록
-        //----------
-        
-        float effectiveness = neuron-> effective / neuron-> priority;
-        if(effectiveness > (1 - EFFECTIVE_OFFSET) || effectiveness < (1 - EFFECTIVE_OFFSET))
+        if (neuron->priority > PRIORITY_CHECK)
         {
-            //cout << "effectiveness : " << effectiveness << endl; //나중에 추가
+
+            float effectiveness = ((float) neuron->effective) / ((float) neuron->priority);
+            if (effectiveness > (1 - EFFECTIVE_OFFSET) || effectiveness < (1 - EFFECTIVE_OFFSET))
+            {
+                cout << "effectiveness : " << effectiveness << endl; //나중에 추가
+            }
+
+            pos = SectorUnit * neuron->sector + 2;
+            SetZero(stream, pos);
+            pos++;
+            SetZero(stream, pos);
         }
-        
+
         //InsertAddressAuto(neuron, 2);
         if (valid)
         {
@@ -219,12 +245,13 @@ bool UnloadNeuron(Neuron *neuron)
 {
     FILE* &stream = neuron->stream;
     long pos = SectorUnit * neuron->sector + 2;
-    if(neuron->is_effective)
+    if(neuron->is_effective == 1)
     {
         neuron->priority = UpDownData(stream, pos, false);
         pos++;
         neuron->effective = UpDownData(stream, pos, false);
-    }else{
+        //printf("[%d] priority : %d / effective : %d \n", neuron->sector, neuron->priority, neuron->effective);
+    }else if(neuron->is_effective == 0){
         neuron->priority = UpDownData(stream, pos, false);
     }
 
