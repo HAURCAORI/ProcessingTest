@@ -8,6 +8,7 @@
 using namespace std;
 
 //함수 선언부 (IO)
+bool Initialize();
 void CreateEmptyFile(const PAGE page);
 bool DeleteFile(const PAGE page);
 void DeleteAllFile();
@@ -43,3 +44,4 @@ void ffread(FILE* stream, long& pos, float& sender);
 void ffwrite(FILE* stream, long& pos, BYTE& sender);
 void ffwrite(FILE* stream, long& pos, BYTES& sender);
 void ffwrite(FILE* stream, long& pos, float& sender);
+void CycleThread();

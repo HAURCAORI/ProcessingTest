@@ -7,9 +7,12 @@ PageFile pout;
 
 bool Initialize()
 {
+	//----------
+	// INPUT, OUTPUT 가져오기
+	//----------
 	string address = (string)Path + "INPUT";
 	FILE* streamin = fopen(address.c_str(), "r+");
-	if(streamin) {
+	if(!streamin) {
 		return false;
 	}
 	pin.stream = streamin;
@@ -17,12 +20,16 @@ bool Initialize()
 
 	address = (string)Path + "OUTPUT";
 	FILE* streamout = fopen(address.c_str(), "r+");
-	if(streamin) {
+	if(!streamout) {
 		return false;
 	}
 	pout.stream = streamout;
 	pout.page = USHORT_OUTPUT;
 
+	//----------
+	// Threading
+	//----------
+	CycleThread();
 	return true;
 }
 
@@ -72,10 +79,10 @@ bool DeleteFile(const PAGE page)
 {
 	string address = (string) Path + to_string(page);
 	if(remove(address.c_str())!=0)
-	{
-		return false;
-	}
-	else
+	{ 
+		return false; 
+	} 
+	else 
 	{
 		return true;
 	}

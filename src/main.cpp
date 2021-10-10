@@ -3,11 +3,20 @@
 #include "DataProcess.h"
 #include "Mapping.h"
 
+
 int main()
 {
     Mapping();
+    Initialize();
+    
     Signal s = SignalGen(1.0);
     Load(0,0,&s,nullptr);
+
+    int selection;
+    do {
+		cin >> selection;
+	} while (selection != 0);
+    
     //CreateEmptyFile(0);
     //InsertDataHeader(0,0,TypeDefault());
     //InsertDataHeader(0,1,TypeDefault());

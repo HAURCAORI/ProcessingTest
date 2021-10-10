@@ -9,6 +9,8 @@
 #include <vector>
 #include "DataProcess.h"
 
+const int RefreshTime = 1000;//ms
+
 namespace ThreadPool {
 class ThreadPool {
  public:
@@ -95,21 +97,20 @@ std::future<typename std::result_of<F(Args...)>::type> ThreadPool::EnqueueJob(
 
 }  // namespace ThreadPool
 
-// 사용 예시
 BYTE readByte(FILE* stream, long& pos){
-  BYTE result;
+  BYTE result = 0;
   fseek(stream,pos,SEEK_SET);
   fread(&result, sizeof(BYTE), 1, stream);
   return result;
 }
 BYTES readBytes(FILE* stream, long& pos){
-  BYTES result;
+  BYTES result = 0;
   fseek(stream,pos,SEEK_SET);
   fread(&result, sizeof(BYTES), 1, stream);
   return result;
 }
 float readFloat(FILE* stream, long& pos){
-  float result;
+  float result  = 0;
   fseek(stream,pos,SEEK_SET);
   fread(&result, sizeof(float), 1, stream);
   return result;
@@ -160,4 +161,16 @@ void ffwrite(FILE* stream, long& pos, float& sender){
   std::future<void> future;
   future = pool.EnqueueJob(writeFloat, stream, pos, sender);
   future.wait();
+}
+
+void CycleThread() {
+	thread([&]
+	{
+		while (true)
+		{
+			this_thread::sleep_for(chrono::milliseconds(RefreshTime));
+			UnloadProcess();
+			ShowProcess();
+		}
+	}).detach();
 }

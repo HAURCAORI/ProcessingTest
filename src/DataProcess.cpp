@@ -1,5 +1,9 @@
 #include "DataProcess.h"
 
+#define LOG_ELAPSED_TIME true
+#define LOG_LOAD false
+#include <chrono>
+
 vector<ActiveNeuron> list_neuron;
 //vector<ActiveNeuron> list_threshold_neuron;
 
@@ -9,10 +13,17 @@ const float EFFECTIVE_OFFSET = 0.05;
 
 bool Load(PAGE page, SECTOR sector, Signal* signal, Neuron* previous)
 {
-    if(previous == nullptr)
-        cout << "LOAD : " << page << "/" << sector << " from null" << endl;
-    else
-        cout << "LOAD : " << page << "/" << sector << " from " << previous->page << "/" << previous->sector << endl;
+    #if LOG_ELAPSED_TIME
+        std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+        std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now(); 
+    #endif
+
+    #if LOG_LOAD
+        if(previous == nullptr)
+          cout << "LOAD : " << page << "/" << sector << " from null" << endl;
+        else
+            cout << "LOAD : " << page << "/" << sector << " from " << previous->page << "/" << previous->sector << endl;
+    #endif
 
     FILE *stream = getPage(page)->stream;
     long pos = SectorUnit * sector;
@@ -98,9 +109,10 @@ bool Load(PAGE page, SECTOR sector, Signal* signal, Neuron* previous)
         {
             BYTES bytes;
             BYTES current_page = page;
-            pos = SectorUnit * (neuron->sector) + 16;
+            
             if (ttype >> 1 & 1) //branch가 true일 경우
             {
+                long pos = SectorUnit * (neuron->sector) + 16;
                 for (int i = 0; i < tsize; i++)
                 {
                     ffread(stream, pos, bytes);
@@ -123,6 +135,7 @@ bool Load(PAGE page, SECTOR sector, Signal* signal, Neuron* previous)
             }
             else
             {
+                long pos = SectorUnit * (neuron->sector) + 16;
                 for (int i = 0; i < tsize; i++)
                 {
                     ffread(stream, pos, bytes);
@@ -143,7 +156,7 @@ bool Load(PAGE page, SECTOR sector, Signal* signal, Neuron* previous)
                     }
                 }
             }
-        }else if(ttype && 1)//주소가 없는 neuron의 경우
+        }else if(ttype & 1)//주소가 없는 neuron의 경우
         {
             if(ttype >> 1 & 1)//branch가 true일 경우
             {
@@ -153,6 +166,9 @@ bool Load(PAGE page, SECTOR sector, Signal* signal, Neuron* previous)
                 Load(page,sector+1,signal,neuron);
             }
         }
+        #if LOG_ELAPSED_TIME
+            std::cout << "Time difference = " << std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count() << "[ns]" << std::endl;
+        #endif
         return true;
     }
 
@@ -166,9 +182,10 @@ bool UnloadProcess()
 	{
 		if (difftime(clock(), iter->timestamp) > SUSPEND_TIME)
 		{
-            cout << "UNLOAD : " << iter->neuron->page << "/" << iter->neuron->sector << endl;
+            #if LOG_LOAD
+                cout << "UNLOAD : " << iter->neuron->page << "/" << iter->neuron->sector << endl;
+            #endif
 			UnloadNeuron(iter->neuron);
-            free(iter->neuron->address);//해제해야 되는 것인지 아닌지 나중에 판단
             free(iter->neuron);
 			iter = list_neuron.erase(iter);
 		}
@@ -178,15 +195,6 @@ bool UnloadProcess()
 		}
 	}
     return true;
-}
-
-void ShowProcess()
-{
-    vector<ActiveNeuron>::iterator iter = list_neuron.begin();
-	for (; iter != list_neuron.end(); iter++)
-	{
-		cout<< iter->timestamp << " : " << iter->neuron->page << "|" << iter->neuron->sector << endl;
-	}
 }
 
 bool UnloadNeuron(Neuron *neuron)
@@ -201,4 +209,14 @@ bool UnloadNeuron(Neuron *neuron)
         ffwrite(stream, pos, temp);
     }
     return true;
+}
+
+void ShowProcess()
+{
+    cout << "[" << clock() << "]" << endl;
+    vector<ActiveNeuron>::iterator iter = list_neuron.begin();
+	for (; iter != list_neuron.end(); iter++)
+	{
+		cout<< iter->timestamp << " : " << iter->neuron->page << "|" << iter->neuron->sector << endl;
+	}
 }
