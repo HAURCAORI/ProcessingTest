@@ -14,7 +14,7 @@ vector<ActiveNeuron> list_neuron;
 const float DELTA_TIME = 1000;//ms
 const float SUSPEND_TIME = 1000;
 const float EFFECTIVE_OFFSET = 0.05;
-const NUMBER PRIORITY_CHECK = 10;
+const NUMBER PRIORITY_CHECK = 250;
 
 bool Load(PAGE page, SECTOR sector, Signal* signal, Neuron* previous)
 {
@@ -53,7 +53,10 @@ bool Load(PAGE page, SECTOR sector, Signal* signal, Neuron* previous)
         neuron->count = tsize;
         ++pos;
         ffread(stream, pos, neuron->specificity); // 3byte - flag
-        pos += 2;
+        ++pos;
+        ffread(stream, pos, neuron->extra);
+        neuron->extra = UpDownData(stream, pos, true);
+        ++pos;
         ffread(stream, pos, neuron->priority);
         ++pos;
         ffread(stream, pos, neuron->effective);
@@ -101,26 +104,24 @@ bool Load(PAGE page, SECTOR sector, Signal* signal, Neuron* previous)
         bool valid = false;
         ActiveNeuron nactive = {neuron, (float)clock() - DELTA_TIME * delta, FlagGen()};
         float pos_temp = SectorUnit * sector + Pos_Priority;
+
         if (value > neuron->threshold)
         {
             
             neuron->priority = UpDownData(stream, pos_temp, true);
             pos_temp++;
             neuron->effective = UpDownData(stream, pos_temp, true); //effective 증가
-            neuron->is_effective = 1;
             valid = true;
         }
         else
         {
             if (neuron->temp > neuron->threshold)
             {
-                neuron->is_effective = 2;
                 valid = true;
             }
             else
             {
                 neuron->priority = UpDownData(stream, pos_temp, true);
-                neuron->is_effective = 0;
                 valid = false;
             }
         }
@@ -132,11 +133,12 @@ bool Load(PAGE page, SECTOR sector, Signal* signal, Neuron* previous)
 
         float effectiveness = ((float) neuron->effective) / ((float) neuron->priority);
         if(sector == 5)
-            cout << sector << "e = " << effectiveness << endl; //나중에 추가
+            cout << sector << "e = " << (int) neuron->priority << "/" << effectiveness << endl; //나중에 추가
 
         if (neuron->priority > PRIORITY_CHECK)
         {
-            /*
+            
+
             float effectiveness = ((float) neuron->effective) / ((float) neuron->priority);
             if (effectiveness > (1 - EFFECTIVE_OFFSET) || effectiveness < (1 - EFFECTIVE_OFFSET))
             {
@@ -147,7 +149,6 @@ bool Load(PAGE page, SECTOR sector, Signal* signal, Neuron* previous)
             SetZero(stream, pos);
             pos++;
             SetZero(stream, pos);
-            */
         }
 
 
@@ -306,6 +307,15 @@ bool UnloadProcess()
 bool UnloadNeuron(Neuron *neuron)
 {
     FILE* &stream = neuron->stream;
+    long pos = SectorUnit * neuron->sector + Pos_Priority-1;
+    neuron->extra = UpDownData(stream, pos, false);
+    if(neuron->extra == 0)
+    {
+        pos = SectorUnit * neuron->sector + Pos_Temp;
+        float temp = 0;
+        ffwrite(stream, pos, temp);
+    }
+    /*
     long pos = SectorUnit * neuron->sector + Pos_Priority;
     
     if(neuron->is_effective == 1)
@@ -324,7 +334,7 @@ bool UnloadNeuron(Neuron *neuron)
         float temp = 0;
         ffwrite(stream, pos, temp);
     }
-    
+    */
     return true;
 }
 

@@ -60,7 +60,6 @@ struct Neuron
     BYTE extra; // temp
     NUMBER priority; //통계를 위한 값
     NUMBER effective; //통계를 위한 값 불필요한 경우 향후 struct에서 삭제
-    BYTE is_effective;
     //Value
     float threshold;
     float weight;
