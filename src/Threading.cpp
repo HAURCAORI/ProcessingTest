@@ -9,7 +9,7 @@
 #include <vector>
 #include "DataProcess.h"
 
-const int RefreshTime = 1000;//ms
+const int RefreshTime = 3000;//ms
 
 namespace ThreadPool {
 class ThreadPool {

@@ -479,6 +479,7 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 		int estimate = NeuronHeader + 2; //종결자 2bytesp[0xff 0xff] + header 18bytes
 		if(neuron_list[i].group == "INPUT")
 		{
+			int estimate = InputHeader + 2;
 			vector<string> div = split(neuron_list[i].stream[1],'/');
 			for(size_t n = 0; n < div.size(); n++)
 			{
@@ -1016,23 +1017,39 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 			
 			for(size_t i = 0; i < groupset_list[g].list.size(); i++)
 			{
-				PAGE p = USHORT_INPUT;
 				SECTOR s = groupset_list[g].list[i].sector;
 
 				size_t index1 = groupset_list[g].list[i].stream[0].find_first_of('[');
 				size_t index2 = groupset_list[g].list[i].stream[0].find_first_of(']');
 				if(index1 == string::npos || index2 == string::npos)
 				{
-					InsertDataHeader(p,s,TypeDefault(),groupset_list[g].list[i].bytes.size(), SpecificGen());
+					InsertInputHeader(s,TypeDefault(),groupset_list[g].list[i].bytes.size(), SpecificGen());
 				}else{
 					string temp = groupset_list[g].list[i].stream[0].substr(index1+1, index2-index1-1);
-					InsertDataHeader(p,s,TypeDefault(), groupset_list[g].list[i].bytes.size(), SpecificGen());
+					size_t index = temp.find_first_of(",");
+					if(index == string::npos)
+					{
+						if(!temp.empty())
+						{
+							InsertInputHeader(s,0, groupset_list[g].list[i].bytes.size(), SpecificGen(),stof(temp));
+						}else{
+							InsertInputHeader(s,0, groupset_list[g].list[i].bytes.size(), SpecificGen());
+						}
+					}else{
+						//속성 추가시 사용
+						vector<string> div = split(temp,',');
+						float value = 1.0;
+						if(!div.empty())
+							value = stof(div[0]);
+						
+						InsertInputHeader(s,0, groupset_list[g].list[i].bytes.size(), SpecificGen(),value);
+					}
 				}
 				
 				string address = (string)Path + "INPUT";
 				FILE *stream = fopen(address.c_str(), "r+");
 				if(stream) {
-					long pos = SectorUnit * s + NeuronHeader;
+					long pos = SectorUnit * s + InputHeader;
 					for(size_t a = 0; a < groupset_list[g].list[i].bytes.size(); a++)
 					{
 						ffwrite(stream,pos, groupset_list[g].list[i].bytes[a]);
@@ -1095,8 +1112,17 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 					vector<string> value = split(temp,'|');
 					if(value.size() == 2)
 					{
-						float threshold = stof(value[0]);
-						float weight = stof(value[1]);
+						float threshold;
+						if(!value[0].empty())
+							threshold = stof(value[0]);
+						else
+							threshold = random_threshold();
+
+						float weight;
+						if(!value[1].empty())
+							weight = stof(value[1]);
+						else
+							weight = random_weight();
 						InsertDataHeader(p,s,t, groupset_list[g].list[i].bytes.size(), SpecificGen(),threshold,weight);
 					}
 					else

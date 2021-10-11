@@ -6,6 +6,7 @@
 // (SectorSize) = (SectorCount)*(SectorUnit)
 #define ReadingUnit 4
 #define NeuronHeader 18
+#define InputHeader 8
 //#define NeuronHeaderSize 4 //BYTE
 //#define NeuronValueSize 12 //BYTE
 #define Path "resource/"
@@ -31,7 +32,7 @@ typedef unsigned short BYTES;
 
 struct Signal
 {
-    BYTE property;
+    BYTE specificity;
     float value;
     COUNT count;
 };
@@ -44,7 +45,7 @@ struct Neuron
     SECTOR sector;
     //Header
     BYTE type;
-    // 1 bit : 활성화 유무 | 2 bit : 수정 불가(fix) | 3 bit :  | 4 bit : 
+    // 1 bit : 활성화 유무 | 2 bit : 수정 불가(fix) | 3 bit : 고정 value 출력 | 4 bit : 
     // 5 bit : | 6 bit : | 7 bit : branch여부 | 8 bit : 주소가 없는 Neuron
     // 추가해야 할 것 = 
     // 2 bit : true일 경우 데이터 변경 불가

@@ -13,8 +13,8 @@ std::mt19937 gen(rd());
 
 float threshold_mean = 0.2;
 float threshold_stddev = 0.1;
-float weight_mean = 1.0;
-float weight_stddev = 0.1;
+float weight_mean = 0.8;
+float weight_stddev = 0.2;
 
 
 float random_float()

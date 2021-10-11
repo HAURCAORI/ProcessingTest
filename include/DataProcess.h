@@ -19,6 +19,8 @@ PageFile* getPage(const PAGE page);
 void SpecificDataRead(PAGE page, SECTOR sector);
 bool InsertDataHeader(PAGE page, SECTOR sector, BYTE type, NUMBER count, FLAG specific);
 bool InsertDataHeader(PAGE page, SECTOR sector, BYTE type, NUMBER count, FLAG specific, float threshold, float weight);
+bool InsertInputHeader(SECTOR sector, BYTE type, NUMBER count, FLAG specific);
+bool InsertInputHeader(SECTOR sector, BYTE type, NUMBER count, FLAG specific, float value);
 bool InsertAddress(PAGE page, SECTOR sector, int offset, BYTES value);
 bool InsertAddressAuto(Neuron* neuron, BYTES value);
 bool ClearData(PAGE page, SECTOR sector);
@@ -36,6 +38,7 @@ FLAG SpecificGen();
 
 //함수 처리부 (Process)
 bool Load(PAGE page, SECTOR sector, Signal* signal, Neuron* previous);
+bool InputLoad(SECTOR sector, float value);
 bool UnloadProcess();
 void ShowProcess();
 bool UnloadNeuron(Neuron *neuron);

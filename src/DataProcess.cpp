@@ -1,9 +1,9 @@
 #include "DataProcess.h"
 
 #define LOG_ELAPSED_TIME false
-#define LOG_LOAD true
+#define LOG_LOAD false
 #define DELAY false
-#define EPSILON 0.001
+#define EPSILON 0.0001
 #include <chrono>
 #include <thread>
 #include <math.h>
@@ -53,11 +53,11 @@ bool Load(PAGE page, SECTOR sector, Signal* signal, Neuron* previous)
         neuron->count = tsize;
         ++pos;
         ffread(stream, pos, neuron->specificity); // 3byte - flag
-        ++pos;
-        ++pos;
-        long pos_temp = pos; //pos_temp = priority 위치
         pos += 2;
-
+        ffread(stream, pos, neuron->priority);
+        ++pos;
+        ffread(stream, pos, neuron->effective);
+        ++pos;
         ffread(stream, pos, neuron->threshold);
         pos += 4;
         ffread(stream, pos, neuron->weight);
@@ -93,21 +93,21 @@ bool Load(PAGE page, SECTOR sector, Signal* signal, Neuron* previous)
 
         signal->value = value;
 
-        cout <<  sector  << ":" <<  value << endl;
+        //cout <<  sector  << ":" <<  value << endl;
 
         //----------
         // ActiveNeuron 생성
         //----------
         bool valid = false;
         ActiveNeuron nactive = {neuron, (float)clock() - DELTA_TIME * delta, FlagGen()};
-
+        float pos_temp = SectorUnit * sector + Pos_Priority;
         if (value > neuron->threshold)
         {
+            
             neuron->priority = UpDownData(stream, pos_temp, true);
             pos_temp++;
             neuron->effective = UpDownData(stream, pos_temp, true); //effective 증가
             neuron->is_effective = 1;
-            list_neuron.push_back(nactive);
             valid = true;
         }
         else
@@ -115,39 +115,47 @@ bool Load(PAGE page, SECTOR sector, Signal* signal, Neuron* previous)
             if (neuron->temp > neuron->threshold)
             {
                 neuron->is_effective = 2;
-                list_neuron.push_back(nactive);
                 valid = true;
             }
             else
             {
                 neuron->priority = UpDownData(stream, pos_temp, true);
                 neuron->is_effective = 0;
-                list_neuron.push_back(nactive);
                 valid = false;
             }
         }
+        list_neuron.push_back(nactive);
 
         //----------
         // priority 및 effective 계산
         //----------
 
+        float effectiveness = ((float) neuron->effective) / ((float) neuron->priority);
+        if(sector == 5)
+            cout << sector << "e = " << effectiveness << endl; //나중에 추가
+
         if (neuron->priority > PRIORITY_CHECK)
         {
-
+            /*
             float effectiveness = ((float) neuron->effective) / ((float) neuron->priority);
             if (effectiveness > (1 - EFFECTIVE_OFFSET) || effectiveness < (1 - EFFECTIVE_OFFSET))
             {
                 //cout << "effectiveness : " << effectiveness << endl; //나중에 추가
             }
-
+            
             pos = SectorUnit * neuron->sector + Pos_Priority;
             SetZero(stream, pos);
             pos++;
             SetZero(stream, pos);
+            */
         }
+
+
         #if DELAY
             this_thread::sleep_for(chrono::milliseconds(10));
         #endif
+
+
         //InsertAddressAuto(neuron, 2);
         if (valid)
         {
@@ -158,19 +166,19 @@ bool Load(PAGE page, SECTOR sector, Signal* signal, Neuron* previous)
 
                 if (ttype >> 1 & 1) //branch가 true일 경우
                 {
-                    long pos = SectorUnit * (neuron->sector) + NeuronHeader;
+                    long pos_address = SectorUnit * (neuron->sector) + NeuronHeader;
                     for (int i = 0; i < tsize; i++)
                     {
-                        ffread(stream, pos, bytes);
-                        pos += 2;
+                        ffread(stream, pos_address, bytes);
+                        pos_address += 2;
                         if (bytes == USHORT_MAX)
                         {
                             break;
                         }
                         else if (bytes == USHORT_TRA)
                         {
-                            ffread(stream, pos, bytes);
-                            pos += 2;
+                            ffread(stream, pos_address, bytes);
+                            pos_address += 2;
                             current_page = bytes;
                         }
                         else
@@ -181,18 +189,18 @@ bool Load(PAGE page, SECTOR sector, Signal* signal, Neuron* previous)
                 }
                 else
                 {
-                    long pos = SectorUnit * (neuron->sector) + NeuronHeader;
+                    long pos_address = SectorUnit * (neuron->sector) + NeuronHeader;
                     for (int i = 0; i < tsize; i++)
                     {
-                        ffread(stream, pos, bytes);
-                        pos += 2;
+                        ffread(stream, pos_address, bytes);
+                        pos_address += 2;
                         if (bytes == USHORT_MAX)
                         {
                             break;
                         }
                         else if (bytes == USHORT_TRA)
                         {
-                            ffread(stream, pos, bytes);
+                            ffread(stream, pos_address, bytes);
                             pos += 2;
                             current_page = bytes;
                         }
@@ -205,13 +213,72 @@ bool Load(PAGE page, SECTOR sector, Signal* signal, Neuron* previous)
             }
         }
 
-#if LOG_ELAPSED_TIME
+        #if LOG_ELAPSED_TIME
             std::cout << "Time difference = " << std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count() << "[ns]" << std::endl;
         #endif
+
         return true;
     }
-
+    else
+    {
+        if(page == USHORT_INPUT)
+        {
+            cout << "Try to Load Input" << endl;
+        }
+    }
     return false;
+}
+
+bool InputLoad(SECTOR sector, float value)
+{
+    FILE *&stream = getPage(USHORT_INPUT)->stream;
+    long pos = SectorUnit * sector;
+
+    BYTE ttype;
+    ffread(stream, pos, ttype);
+    //----------
+    // 데이터 불러오기
+    //----------
+    ++pos;
+    NUMBER tsize;
+    ffread(stream, pos, tsize); // 2byte - size
+    ++pos;
+    FLAG specificity;
+    ffread(stream, pos, specificity); // 3byte - flag
+    ++pos;
+    float inner_value;
+    ffread(stream, pos, inner_value);
+
+    Signal signal = SignalGen(value);
+    signal.specificity = specificity;
+    signal.count = 0;
+
+    if (tsize > 0)
+    {
+        BYTES bytes;
+        BYTES current_page = 0;
+        long pos = SectorUnit * sector + InputHeader;
+        for (int i = 0; i < tsize; i++)
+        {
+            ffread(stream, pos, bytes);
+            pos += 2;
+            if (bytes == USHORT_MAX)
+            {
+                break;
+            }
+            else if (bytes == USHORT_TRA)
+            {
+                ffread(stream, pos, bytes);
+                pos += 2;
+                current_page = bytes;
+            }
+            else
+            {
+                Load(current_page, bytes, &signal, nullptr);
+            }
+        }
+    }
+    return true;
 }
 
 bool UnloadProcess()
@@ -240,6 +307,7 @@ bool UnloadNeuron(Neuron *neuron)
 {
     FILE* &stream = neuron->stream;
     long pos = SectorUnit * neuron->sector + Pos_Priority;
+    
     if(neuron->is_effective == 1)
     {
         neuron->priority = UpDownData(stream, pos, false);
@@ -256,15 +324,19 @@ bool UnloadNeuron(Neuron *neuron)
         float temp = 0;
         ffwrite(stream, pos, temp);
     }
+    
     return true;
 }
 
 void ShowProcess()
 {
     cout << "[" << clock() << "]" << endl;
+    /*
+    cout << "[" << clock() << "]" << endl;
     vector<ActiveNeuron>::iterator iter = list_neuron.begin();
 	for (; iter != list_neuron.end(); iter++)
 	{
 		cout<< iter->timestamp << " : " << iter->neuron->page << "|" << iter->neuron->sector << endl;
 	}
+    */
 }

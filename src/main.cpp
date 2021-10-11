@@ -2,24 +2,31 @@
 #include "Calculate.h"
 #include "DataProcess.h"
 #include "Mapping.h"
-
+#include <thread>
 
 int main()
 {
     if (Mapping())
     {
-        
-        Initialize();
 
-        Signal s = SignalGen(1.0);
-        Load(0, 0, &s, nullptr);
+        Initialize();
+        
+        
+        thread([&] {
+            while (true)
+            {
+                InputLoad(0, random_float());
+                this_thread::sleep_for(chrono::milliseconds(100)); 
+            }
+        }).detach();
+
+        
 
         int selection;
         do
         {
             cin >> selection;
         } while (selection != 0);
-        
     }
     else
     {
