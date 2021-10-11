@@ -1,7 +1,7 @@
 #include "DataProcess.h"
 
 #define LOG_ELAPSED_TIME false
-#define LOG_LOAD false
+#define LOG_LOAD true
 #define DELAY false
 #define EPSILON 0.001
 #include <chrono>

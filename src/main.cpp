@@ -6,18 +6,25 @@
 
 int main()
 {
-    Mapping();
-    
-    Initialize();
-    
-    Signal s = SignalGen(1.0);
-    Load(0,0,&s,nullptr);
+    if (Mapping())
+    {
+        
+        Initialize();
 
-    int selection;
-    do {
-		cin >> selection;
-	} while (selection != 0);
-    
+        Signal s = SignalGen(1.0);
+        Load(0, 0, &s, nullptr);
+
+        int selection;
+        do
+        {
+            cin >> selection;
+        } while (selection != 0);
+        
+    }
+    else
+    {
+        cout << "fail....." << endl;
+    }
     
 
     //CreateEmptyFile(0);

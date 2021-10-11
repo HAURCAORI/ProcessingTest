@@ -284,6 +284,12 @@ void CreateAddressSet(const PAGE countpage, const PAGE offset_page)
 		temp.page = (offset_page+i);
 		address_list.push_back(temp);
 	}
+	AddressSet in;
+	in.page = USHORT_INPUT;
+	address_list.push_back(in);
+	AddressSet out;
+	out.page = USHORT_OUTPUT;
+	address_list.push_back(out);
 }
 
 void AddAddressSet(neuronTag tag)
