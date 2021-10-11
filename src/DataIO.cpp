@@ -184,7 +184,8 @@ void SpecificDataRead(PAGE page, SECTOR sector)
 	}
 }
 
-bool InsertDataHeader(PAGE page, SECTOR sector, BYTE type, NUMBER count)
+// DEPENDENCY : STRUCT
+bool InsertDataHeader(PAGE page, SECTOR sector, BYTE type, NUMBER count, FLAG specific)
 {
 	NUMBER empty = 0;
 	string address;
@@ -198,13 +199,17 @@ bool InsertDataHeader(PAGE page, SECTOR sector, BYTE type, NUMBER count)
 	FILE *stream = fopen(address.c_str(), "r+");
 	if(stream) {
 		long pos = SectorUnit * sector;
-		ffwrite(stream,pos,type);
+		ffwrite(stream,pos,type); //type
 		++pos;
-		ffwrite(stream,pos,count);
+		ffwrite(stream,pos,count); //count
+		++pos;
+		ffwrite(stream,pos,specific); //specificity
+		++pos;
+		ffwrite(stream,pos,empty); //extra
 		++pos;
 		ffwrite(stream,pos,empty); //priority
 		++pos;
-		ffwrite(stream,pos,empty); //extra
+		ffwrite(stream,pos,empty); //effectiveness
 		++pos;
 		float threshold = random_threshold();
 		ffwrite(stream, pos, threshold);
@@ -222,20 +227,24 @@ bool InsertDataHeader(PAGE page, SECTOR sector, BYTE type, NUMBER count)
 	
 }
 
-bool InsertDataHeader(PAGE page, SECTOR sector, BYTE type,  NUMBER count, float threshold, float weight)
+bool InsertDataHeader(PAGE page, SECTOR sector, BYTE type, NUMBER count, FLAG specific, float threshold, float weight)
 {
 	NUMBER empty = 0;
 	string address = (string) Path + to_string(page);
 	FILE *stream = fopen(address.c_str(), "r+");
 	if(stream) {
 		long pos = SectorUnit * sector;
-		ffwrite(stream,pos,type);
+		ffwrite(stream,pos,type); //type
 		++pos;
-		ffwrite(stream,pos,count);
+		ffwrite(stream,pos,count); //count
+		++pos;
+		ffwrite(stream,pos,specific); //specificity
+		++pos;
+		ffwrite(stream,pos,empty); //extra
 		++pos;
 		ffwrite(stream,pos,empty); //priority
 		++pos;
-		ffwrite(stream,pos,empty); //extra
+		ffwrite(stream,pos,empty); //effectiveness
 		++pos;
 		ffwrite(stream, pos, threshold);
 		pos += 4;
@@ -269,9 +278,10 @@ bool InsertAddress(PAGE page, SECTOR sector, int offset, BYTES value)
 	}
 }
 
+
 bool InsertAddressAuto(Neuron* neuron, BYTES value)
 {
-	long pos = SectorUnit*(neuron->sector) + 16 + (neuron->count)*2;
+	long pos = SectorUnit*(neuron->sector) + NeuronHeader + (neuron->count)*2 - 2; //count는 0Xff를 포함하기 때문에 -2해줌
 
 	if(isAvailableAddress(neuron->stream, pos))
 	{
@@ -354,6 +364,10 @@ NUMBER UpDownData(FILE* &stream, long pos, bool increase)
 	return count;
 }
 
+//
+// Property Gen
+//
+
 BYTE TypeGen(bool isValide, bool isTerminus)
 {
 	BYTE byte;
@@ -387,6 +401,11 @@ BYTE PropertyGen()
 }
 
 BYTE FlagGen()
+{
+	return 0;
+}
+
+FLAG SpecificGen()
 {
 	return 0;
 }

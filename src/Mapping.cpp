@@ -69,7 +69,7 @@ vector<string> group_name_list;// 빠른 검색을 위한 그룹 이름 지정
 vector<neuronTag> neuron_list;
 vector<AddressSet> address_list;
 vector<GroupSet> groupset_list;
-const vector<string> methods = {"", "x","i","o"};
+const vector<string> methods = {"", "x","i","o"};// 유효 속성값 정의
 
 
 string error;
@@ -470,7 +470,7 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 	//----------------------//
 	for(size_t i = 0; i < neuron_list.size(); i++)
 	{
-		int estimate = 18; //종결자 2bytesp[0xff 0xff] + header 16bytes
+		int estimate = NeuronHeader + 2; //종결자 2bytesp[0xff 0xff] + header 18bytes
 		if(neuron_list[i].group == "INPUT")
 		{
 			vector<string> div = split(neuron_list[i].stream[1],'/');
@@ -515,7 +515,7 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 		}
 		else if(neuron_list[i].group == "OUTPUT")
 		{
-			neuron_list[i].estimate = 31;
+			neuron_list[i].estimate = 47;// 3개의 SECTOR 할당 Dependency
 			continue;
 		}
 		else if(neuron_list[i].stream[1].empty()) //***기본 지정자***
@@ -562,7 +562,7 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 				estimate = 0;
 				ErrorMsg(false,neuron_list[i].group, i+1, "Can't find next neuron.");
 			}else{
-				estimate = 16;
+				estimate = NeuronHeader;
 			}
 			
 		}
@@ -589,59 +589,60 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 	for(size_t i = 0; i < neuron_list.size(); i++)
 	{
 		int num = (neuron_list[i].estimate / SectorUnit) + 1;
-		if(neuron_list[i].group != "INPUT" && neuron_list[i].group != "OUTPUT"){
-		if(neuron_list[i].estimate == 16)
+		if (neuron_list[i].group != "INPUT" && neuron_list[i].group != "OUTPUT")
 		{
-			num = 1;
-			int nn = (neuron_list[i+1].estimate / SectorUnit) + 1;//다음 뉴런의 정보도 고려
-			if((sector + num + nn > USHORT_MAX-2))
+			if (neuron_list[i].estimate == NeuronHeader)
 			{
-				page += 1;
-				sector = 0;
-				if(previous == true)
+				num = 1;
+				int nn = (neuron_list[i + 1].estimate / SectorUnit) + 1; //다음 뉴런의 정보도 고려
+				if ((sector + num + nn > USHORT_MAX - 2))
 				{
-					++countpage;
+					page += 1;
+					sector = 0;
+					if (previous == true)
+					{
+						++countpage;
+					}
 				}
-			}
-			neuron_list[i].page = page;
-			neuron_list[i].sector = sector;
-			previous = true;
+				neuron_list[i].page = page;
+				neuron_list[i].sector = sector;
+				previous = true;
 
-			++sector;
-			++countsector;;
-		}
-		else
-		{
-			if((sector + num > USHORT_MAX-2)) //65535 주소는 사용할 수 없는 주소니 할당되는 것 방지
+				++sector;
+				++countsector;
+			}
+			else
 			{
-				page += 1;
-				sector = 0;
-				if(previous == true)
+				if ((sector + num > USHORT_MAX - 2)) //65535 주소는 사용할 수 없는 주소니 할당되는 것 방지
 				{
-					++countpage;
+					page += 1;
+					sector = 0;
+					if (previous == true)
+					{
+						++countpage;
+					}
 				}
-			}
-			neuron_list[i].page = page;
-			neuron_list[i].sector = sector;
-			previous = true;
+				neuron_list[i].page = page;
+				neuron_list[i].sector = sector;
+				previous = true;
 
-			sector += num;
-			countsector += num;
+				sector += num;
+				countsector += num;
+			}
 		}
-		}
-		else if(neuron_list[i].group == "INPUT")
+		else if (neuron_list[i].group == "INPUT")
 		{
 			neuron_list[i].page = USHORT_INPUT;
 			neuron_list[i].sector = sector_input;
 			sector_input += num;
 		}
-		else if(neuron_list[i].group == "OUTPUT")
+		else if (neuron_list[i].group == "OUTPUT")
 		{
 			neuron_list[i].page = USHORT_OUTPUT;
 			neuron_list[i].sector = sector_output;
-			sector_output += 2;
+			sector_output += 1;
 		}
-		if(TAG)
+		if (TAG)
 			cout << neuron_list[i].id << "(" << num << ") :" << neuron_list[i].page << "/" << neuron_list[i].sector << endl;
 	}
 
@@ -656,246 +657,252 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 
 	for(size_t g = 0; g < groupset_list.size(); g++)
 	{
-		if(groupset_list[g].group != "INPUT" && groupset_list[g].group != "OUTPUT")
+		if (groupset_list[g].group != "INPUT" && groupset_list[g].group != "OUTPUT")
 		{
-		for(size_t i = 0; i < groupset_list[g].list.size(); i++)
-		{
-			CreateAddressSet(countpage, offset_page);
-			if(groupset_list[g].list[i].stream[1].empty()) // 기본 생성자
-			{
-				vector<string> div = split(groupset_list[g].list[i].stream[2],'/');
-				for(size_t n = 0; n < div.size(); n++)
-				{
-					if(div[n].empty())
-						continue;
-
-					if(div[n].find(';') != string::npos) //그룹여부는 ';' 유무로 구분
-					{
-						index = div[n].find_first_of(';');
-						string first = div[n].substr(0,index);
-						string second = div[n].substr(index+1);
-						if(isnumber(first) && isnumber(second)){ //숫자쌍은 단일 주소 의미
-							bool check = false;
-							int temp_p = stoi(first);
-							int temp_s = stoi(second);
-							if(!(temp_p <= 65535 && temp_p >= 0))
-							{
-								ErrorMsg(true,groupset_list[g].list[i].group + ":" + groupset_list[g].list[i].id, n+1, "Value of page must be between 0 and 65535.");
-								valid = false;
-							}
-							if(!(temp_s <= 65535 && temp_s >= 0))
-							{
-								ErrorMsg(true,groupset_list[g].list[i].group + ":" + groupset_list[g].list[i].id, n+1, "Value of sector must be between 0 and 65535.");
-								valid = false;
-							}
-							for(size_t al = 0; al < address_list.size(); al++)
-							{
-								if(address_list[al].page == temp_p)
-								{
-									address_list[al].bytes.push_back(temp_s);
-									check = true;
-									break;
-								}
-							}
-							if(!check)
-							{
-								AddressSet temp;
-								temp.page = temp_p;
-								temp.bytes.push_back(temp_s);
-								address_list.push_back(temp);
-							}
-						}else{
-							//first가 그룹에 속해있는지는 이미 확인했으므로 생략
-							if(second.empty())
-							{
-								//해당 그룹의 모든 데이터로 연결
-								if(first != groupset_list[g].list[i].group)//자기 자신의 그룹이 아니면
-								{
-									for(size_t tg = 0; tg < group_name_list.size(); tg++)
-									{
-										if(group_name_list[tg] == first)
-										{
-											for(size_t t = 0; t < groupset_list[tg].list.size(); t++)
-											{
-												AddAddressSet(groupset_list[tg].list[t]);
-											}
-										}
-									}
-								}
-								else
-								{
-									ErrorMsg(true, groupset_list[g].list[i].group + ":" + groupset_list[g].list[i].id, n+1, "Try to self-reference group.");
-									valid = false;
-								}
-							}else{
-								//해당 그룹의 특수 데이터로 연결	
-								if(first != groupset_list[g].list[i].group)//자기 자신의 그룹이 아니면
-								{
-									for(size_t tg = 0; tg < group_name_list.size(); tg++)
-									{
-										if(group_name_list[tg] == first)
-										{
-											vector<string> element = split(second,'|');
-											for(size_t te = 0; te < element.size(); te++)
-											{
-												bool exist = false;
-												for(size_t t = 0; t < groupset_list[tg].list.size(); t++)
-												{
-													if(groupset_list[tg].list[t].id==element[te])
-													{
-														AddAddressSet(groupset_list[tg].list[t]);
-														exist = true;
-														break;
-													}
-												}
-												if(!exist)
-												{
-													ErrorMsg(true, groupset_list[g].list[i].group + ":" + groupset_list[g].list[i].id, n+1, "There are no name of '"+ element[te] + "'.");
-													valid = false;
-												}
-											}
-										}
-									}
-								}
-								else
-								{
-									ErrorMsg(true, groupset_list[g].list[i].group + ":" + groupset_list[g].list[i].id, n+1, "Try to self-reference group.");
-									valid = false;
-								}
-							}
-						}
-					}else{
-						//기본 주소로 처리
-						bool check = false;
-						for(size_t t = 0; t < groupset_list[g].list.size(); t++)
-						{
-							if(groupset_list[g].list[t].id == div[n])
-							{
-								check = true;
-								if(i==t)
-								{
-									ErrorMsg(true, groupset_list[g].list[i].group + ":" + groupset_list[g].list[i].id, n+1, "Try to self-reference id.");
-									valid = false;	
-									break;
-								}
-								else
-								{
-									AddAddressSet(groupset_list[g].list[t]);
-									break;
-								}
-							}
-						}
-						if(!check)
-						{
-							ErrorMsg(true, groupset_list[g].list[i].group + ":" + groupset_list[g].list[i].id, n+1, "There is no name of '" + div[n] + "'.");
-							valid = false;
-						}
-					}
-				}
-			}
-			
-
-			if(LOG){
-				cout << "[" << groupset_list[g].list[i].group << ":" << groupset_list[g].list[i].id << "]" << "estimate : " << groupset_list[g].list[i].estimate-16 << endl;
-				for(size_t a = 0; a < address_list.size(); a++)
-				{
-					for(size_t b = 0; b < address_list[a].bytes.size(); b++)
-					{
-						cout << "page : " << address_list[a].page << " / sector : " << address_list[a].bytes[b] << endl;
-					}
-				}
-			}
-
-			for(size_t a = 0 ; a < address_list.size(); a++)
-			{
-				if(groupset_list[g].list[i].page == address_list[a].page)
-				{
-					for(size_t b = 0; b < address_list[a].bytes.size(); b++)
-					{
-						groupset_list[g].list[i].bytes.push_back(address_list[a].bytes[b]);
-					}
-				}else{
-					if(address_list[a].bytes.size()>0)
-					{
-						groupset_list[g].list[i].bytes.push_back(USHORT_TRA);
-						groupset_list[g].list[i].bytes.push_back(address_list[a].page);
-					}
-					for(size_t b = 0; b < address_list[a].bytes.size(); b++)
-					{
-						groupset_list[g].list[i].bytes.push_back(address_list[a].bytes[b]);
-					}
-				}
-			}
-			if(groupset_list[g].list[i].stream[1] != "x")
-			{
-				groupset_list[g].list[i].bytes.push_back(USHORT_MAX);
-			}
-
-			/*
-			for(size_t l=0; l < groupset_list[g].list[i].bytes.size(); l++)
-			{
-				cout << groupset_list[g].list[i].bytes[l] << ";";
-			}
-			cout << endl;
-			*/
-			
-		}
-		}
-		else if(groupset_list[g].group == "INPUT")
-		{
-			for(size_t i = 0; i < groupset_list[g].list.size(); i++)
+			for (size_t i = 0; i < groupset_list[g].list.size(); i++)
 			{
 				CreateAddressSet(countpage, offset_page);
-				vector<string> div = split(groupset_list[g].list[i].stream[1],'/');
-				for(size_t n = 0; n < div.size(); n++)
+				if (groupset_list[g].list[i].stream[1].empty()) // 기본 생성자
 				{
-					if(div[n].empty())
+					vector<string> div = split(groupset_list[g].list[i].stream[2], '/');
+					for (size_t n = 0; n < div.size(); n++)
+					{
+						if (div[n].empty())
+							continue;
+
+						if (div[n].find(';') != string::npos) //그룹여부는 ';' 유무로 구분
+						{
+							index = div[n].find_first_of(';');
+							string first = div[n].substr(0, index);
+							string second = div[n].substr(index + 1);
+							if (isnumber(first) && isnumber(second))
+							{ //숫자쌍은 단일 주소 의미
+								bool check = false;
+								int temp_p = stoi(first);
+								int temp_s = stoi(second);
+								if (!(temp_p <= 65535 && temp_p >= 0))
+								{
+									ErrorMsg(true, groupset_list[g].list[i].group + ":" + groupset_list[g].list[i].id, n + 1, "Value of page must be between 0 and 65535.");
+									valid = false;
+								}
+								if (!(temp_s <= 65535 && temp_s >= 0))
+								{
+									ErrorMsg(true, groupset_list[g].list[i].group + ":" + groupset_list[g].list[i].id, n + 1, "Value of sector must be between 0 and 65535.");
+									valid = false;
+								}
+								for (size_t al = 0; al < address_list.size(); al++)
+								{
+									if (address_list[al].page == temp_p)
+									{
+										address_list[al].bytes.push_back(temp_s);
+										check = true;
+										break;
+									}
+								}
+								if (!check)
+								{
+									AddressSet temp;
+									temp.page = temp_p;
+									temp.bytes.push_back(temp_s);
+									address_list.push_back(temp);
+								}
+							}
+							else
+							{
+								//first가 그룹에 속해있는지는 이미 확인했으므로 생략
+								if (second.empty())
+								{
+									//해당 그룹의 모든 데이터로 연결
+									if (first != groupset_list[g].list[i].group) //자기 자신의 그룹이 아니면
+									{
+										for (size_t tg = 0; tg < group_name_list.size(); tg++)
+										{
+											if (group_name_list[tg] == first)
+											{
+												for (size_t t = 0; t < groupset_list[tg].list.size(); t++)
+												{
+													AddAddressSet(groupset_list[tg].list[t]);
+												}
+											}
+										}
+									}
+									else
+									{
+										ErrorMsg(true, groupset_list[g].list[i].group + ":" + groupset_list[g].list[i].id, n + 1, "Try to self-reference group.");
+										valid = false;
+									}
+								}
+								else
+								{
+									//해당 그룹의 특수 데이터로 연결
+									if (first != groupset_list[g].list[i].group) //자기 자신의 그룹이 아니면
+									{
+										for (size_t tg = 0; tg < group_name_list.size(); tg++)
+										{
+											if (group_name_list[tg] == first)
+											{
+												vector<string> element = split(second, '|');
+												for (size_t te = 0; te < element.size(); te++)
+												{
+													bool exist = false;
+													for (size_t t = 0; t < groupset_list[tg].list.size(); t++)
+													{
+														if (groupset_list[tg].list[t].id == element[te])
+														{
+															AddAddressSet(groupset_list[tg].list[t]);
+															exist = true;
+															break;
+														}
+													}
+													if (!exist)
+													{
+														ErrorMsg(true, groupset_list[g].list[i].group + ":" + groupset_list[g].list[i].id, n + 1, "There are no name of '" + element[te] + "'.");
+														valid = false;
+													}
+												}
+											}
+										}
+									}
+									else
+									{
+										ErrorMsg(true, groupset_list[g].list[i].group + ":" + groupset_list[g].list[i].id, n + 1, "Try to self-reference group.");
+										valid = false;
+									}
+								}
+							}
+						}
+						else
+						{
+							//기본 주소로 처리
+							bool check = false;
+							for (size_t t = 0; t < groupset_list[g].list.size(); t++)
+							{
+								if (groupset_list[g].list[t].id == div[n])
+								{
+									check = true;
+									if (i == t)
+									{
+										ErrorMsg(true, groupset_list[g].list[i].group + ":" + groupset_list[g].list[i].id, n + 1, "Try to self-reference id.");
+										valid = false;
+										break;
+									}
+									else
+									{
+										AddAddressSet(groupset_list[g].list[t]);
+										break;
+									}
+								}
+							}
+							if (!check)
+							{
+								ErrorMsg(true, groupset_list[g].list[i].group + ":" + groupset_list[g].list[i].id, n + 1, "There is no name of '" + div[n] + "'.");
+								valid = false;
+							}
+						}
+					}
+				}
+
+				if (LOG)
+				{
+					cout << "[" << groupset_list[g].list[i].group << ":" << groupset_list[g].list[i].id << "]"
+						 << "estimate : " << groupset_list[g].list[i].estimate - 18 << endl;
+					for (size_t a = 0; a < address_list.size(); a++)
+					{
+						for (size_t b = 0; b < address_list[a].bytes.size(); b++)
+						{
+							cout << "page : " << address_list[a].page << " / sector : " << address_list[a].bytes[b] << endl;
+						}
+					}
+				}
+
+				for (size_t a = 0; a < address_list.size(); a++)
+				{
+					if (groupset_list[g].list[i].page == address_list[a].page)
+					{
+						for (size_t b = 0; b < address_list[a].bytes.size(); b++)
+						{
+							groupset_list[g].list[i].bytes.push_back(address_list[a].bytes[b]);
+						}
+					}
+					else
+					{
+						if (address_list[a].bytes.size() > 0)
+						{
+							groupset_list[g].list[i].bytes.push_back(USHORT_TRA);
+							groupset_list[g].list[i].bytes.push_back(address_list[a].page);
+						}
+						for (size_t b = 0; b < address_list[a].bytes.size(); b++)
+						{
+							groupset_list[g].list[i].bytes.push_back(address_list[a].bytes[b]);
+						}
+					}
+				}
+
+				if (groupset_list[g].list[i].stream[1] == "x")
+				{
+					groupset_list[g].list[i].bytes.push_back(groupset_list[g].list[i].sector+1);
+				}
+				groupset_list[g].list[i].bytes.push_back(USHORT_MAX);
+			}
+		}
+		else if (groupset_list[g].group == "INPUT")
+		{
+			for (size_t i = 0; i < groupset_list[g].list.size(); i++)
+			{
+				CreateAddressSet(countpage, offset_page);
+				vector<string> div = split(groupset_list[g].list[i].stream[1], '/');
+				for (size_t n = 0; n < div.size(); n++)
+				{
+					if (div[n].empty())
 						continue;
 
 					index = div[n].find_first_of(';');
-					string first = div[n].substr(0,index);
-					string second = div[n].substr(index+1);
-					if(isnumber(first) && isnumber(second)){ //숫자쌍은 단일 주소 의미
+					string first = div[n].substr(0, index);
+					string second = div[n].substr(index + 1);
+					if (isnumber(first) && isnumber(second))
+					{ //숫자쌍은 단일 주소 의미
 						bool check = false;
 						int temp_p = stoi(first);
 						int temp_s = stoi(second);
-						if(!(temp_p <= 65535 && temp_p >= 0))
+						if (!(temp_p <= 65535 && temp_p >= 0))
 						{
-							ErrorMsg(true,groupset_list[g].list[i].group + ":" + groupset_list[g].list[i].id, n+1, "Value of page must be between 0 and 65535.");
+							ErrorMsg(true, groupset_list[g].list[i].group + ":" + groupset_list[g].list[i].id, n + 1, "Value of page must be between 0 and 65535.");
 							valid = false;
 						}
-						if(!(temp_s <= 65535 && temp_s >= 0))
+						if (!(temp_s <= 65535 && temp_s >= 0))
 						{
-							ErrorMsg(true,groupset_list[g].list[i].group + ":" + groupset_list[g].list[i].id, n+1, "Value of sector must be between 0 and 65535.");
+							ErrorMsg(true, groupset_list[g].list[i].group + ":" + groupset_list[g].list[i].id, n + 1, "Value of sector must be between 0 and 65535.");
 							valid = false;
 						}
-						for(size_t al = 0; al < address_list.size(); al++)
+						for (size_t al = 0; al < address_list.size(); al++)
 						{
-							if(address_list[al].page == temp_p)
+							if (address_list[al].page == temp_p)
 							{
 								address_list[al].bytes.push_back(temp_s);
 								check = true;
 								break;
 							}
 						}
-						if(!check)
+						if (!check)
 						{
 							AddressSet temp;
 							temp.page = temp_p;
 							temp.bytes.push_back(temp_s);
 							address_list.push_back(temp);
 						}
-					}else{
-						if(second.empty())
+					}
+					else
+					{
+						if (second.empty())
 						{
 							//해당 그룹의 모든 데이터로 연결
-							if(first != groupset_list[g].list[i].group)//자기 자신의 그룹이 아니면
+							if (first != groupset_list[g].list[i].group) //자기 자신의 그룹이 아니면
 							{
-								for(size_t tg = 0; tg < group_name_list.size(); tg++)
+								for (size_t tg = 0; tg < group_name_list.size(); tg++)
 								{
-									if(group_name_list[tg] == first)
+									if (group_name_list[tg] == first)
 									{
-										for(size_t t = 0; t < groupset_list[tg].list.size(); t++)
+										for (size_t t = 0; t < groupset_list[tg].list.size(); t++)
 										{
 											AddAddressSet(groupset_list[tg].list[t]);
 										}
@@ -904,33 +911,35 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 							}
 							else
 							{
-								ErrorMsg(true, groupset_list[g].list[i].group + ":" + groupset_list[g].list[i].id, n+1, "Try to self-reference group.");
+								ErrorMsg(true, groupset_list[g].list[i].group + ":" + groupset_list[g].list[i].id, n + 1, "Try to self-reference group.");
 								valid = false;
 							}
-						}else{
-							//해당 그룹의 특수 데이터로 연결	
-							if(first != groupset_list[g].list[i].group)//자기 자신의 그룹이 아니면
+						}
+						else
+						{
+							//해당 그룹의 특수 데이터로 연결
+							if (first != groupset_list[g].list[i].group) //자기 자신의 그룹이 아니면
 							{
-								for(size_t tg = 0; tg < group_name_list.size(); tg++)
+								for (size_t tg = 0; tg < group_name_list.size(); tg++)
 								{
-									if(group_name_list[tg] == first)
+									if (group_name_list[tg] == first)
 									{
-										vector<string> element = split(second,'|');
-										for(size_t te = 0; te < element.size(); te++)
+										vector<string> element = split(second, '|');
+										for (size_t te = 0; te < element.size(); te++)
 										{
 											bool exist = false;
-											for(size_t t = 0; t < groupset_list[tg].list.size(); t++)
+											for (size_t t = 0; t < groupset_list[tg].list.size(); t++)
 											{
-												if(groupset_list[tg].list[t].id==element[te])
+												if (groupset_list[tg].list[t].id == element[te])
 												{
 													AddAddressSet(groupset_list[tg].list[t]);
 													exist = true;
 													break;
 												}
 											}
-											if(!exist)
+											if (!exist)
 											{
-												ErrorMsg(true, groupset_list[g].list[i].group + ":" + groupset_list[g].list[i].id, n+1, "There are no name of '"+ element[te] + "'.");
+												ErrorMsg(true, groupset_list[g].list[i].group + ":" + groupset_list[g].list[i].id, n + 1, "There are no name of '" + element[te] + "'.");
 												valid = false;
 											}
 										}
@@ -939,40 +948,41 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 							}
 							else
 							{
-								ErrorMsg(true, groupset_list[g].list[i].group + ":" + groupset_list[g].list[i].id, n+1, "Try to self-reference group.");
+								ErrorMsg(true, groupset_list[g].list[i].group + ":" + groupset_list[g].list[i].id, n + 1, "Try to self-reference group.");
 								valid = false;
 							}
 						}
 					}
 				}
-			
 
-				if(LOG){
-					cout << "[" << groupset_list[g].list[i].group << ":" << groupset_list[g].list[i].id << "]" << "estimate : " << groupset_list[g].list[i].estimate-16 << endl;
-					for(size_t a = 0; a < address_list.size(); a++)
+				if (LOG)
+				{
+					cout << "[" << groupset_list[g].list[i].group << ":" << groupset_list[g].list[i].id << "]"
+						 << "estimate : " << groupset_list[g].list[i].estimate - 16 << endl;
+					for (size_t a = 0; a < address_list.size(); a++)
 					{
-						for(size_t b = 0; b < address_list[a].bytes.size(); b++)
+						for (size_t b = 0; b < address_list[a].bytes.size(); b++)
 						{
 							cout << "page : " << address_list[a].page << " / sector : " << address_list[a].bytes[b] << endl;
 						}
 					}
 				}
 
-				for(size_t a = 0 ; a < address_list.size(); a++)
+				for (size_t a = 0; a < address_list.size(); a++)
 				{
-					if(address_list[a].bytes.size()>0)
+					if (address_list[a].bytes.size() > 0)
 					{
 						groupset_list[g].list[i].bytes.push_back(USHORT_TRA);
 						groupset_list[g].list[i].bytes.push_back(address_list[a].page);
 					}
-					for(size_t b = 0; b < address_list[a].bytes.size(); b++)
+					for (size_t b = 0; b < address_list[a].bytes.size(); b++)
 					{
 						groupset_list[g].list[i].bytes.push_back(address_list[a].bytes[b]);
 					}
 				}
 				groupset_list[g].list[i].bytes.push_back(USHORT_MAX);
-				
-			/*
+
+				/*
 			for(size_t l=0; l < groupset_list[g].list[i].bytes.size(); l++)
 			{
 				cout << groupset_list[g].list[i].bytes[l] << ";";
@@ -982,7 +992,6 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 			}
 		}
 	}
-
 
 	//----------------------//
 	// v. 파일에 데이터 기록
@@ -1008,16 +1017,16 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 				size_t index2 = groupset_list[g].list[i].stream[0].find_first_of(']');
 				if(index1 == string::npos || index2 == string::npos)
 				{
-					InsertDataHeader(p,s,TypeDefault(),groupset_list[g].list[i].bytes.size() );
+					InsertDataHeader(p,s,TypeDefault(),groupset_list[g].list[i].bytes.size(), SpecificGen());
 				}else{
 					string temp = groupset_list[g].list[i].stream[0].substr(index1+1, index2-index1-1);
-					InsertDataHeader(p,s,TypeDefault(), groupset_list[g].list[i].bytes.size());
+					InsertDataHeader(p,s,TypeDefault(), groupset_list[g].list[i].bytes.size(), SpecificGen());
 				}
 				
 				string address = (string)Path + "INPUT";
 				FILE *stream = fopen(address.c_str(), "r+");
 				if(stream) {
-					long pos = SectorUnit * s + 16;
+					long pos = SectorUnit * s + NeuronHeader;
 					for(size_t a = 0; a < groupset_list[g].list[i].bytes.size(); a++)
 					{
 						ffwrite(stream,pos, groupset_list[g].list[i].bytes[a]);
@@ -1044,10 +1053,10 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 				size_t index2 = groupset_list[g].list[i].stream[0].find_first_of(']');
 				if(index1 == string::npos || index2 == string::npos)
 				{
-					InsertDataHeader(p,s,TypeDefault(), groupset_list[g].list[i].bytes.size());
+					InsertDataHeader(p,s,TypeDefault(), groupset_list[g].list[i].bytes.size(), SpecificGen());
 				}else{
 					string temp = groupset_list[g].list[i].stream[0].substr(index1+1, index2-index1-1);
-					InsertDataHeader(p,s,TypeDefault(), groupset_list[g].list[i].bytes.size());
+					InsertDataHeader(p,s,TypeDefault(), groupset_list[g].list[i].bytes.size(), SpecificGen());
 				}
 			}
 			
@@ -1058,18 +1067,23 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 		{
 			PAGE p = groupset_list[g].list[i].page;
 			SECTOR s = groupset_list[g].list[i].sector;
-			
-
+			BYTE t = TypeDefault();
 			size_t index1 = groupset_list[g].list[i].stream[0].find_first_of('[');
 			size_t index2 = groupset_list[g].list[i].stream[0].find_first_of(']');
+
+			if(groupset_list[g].list[i].stream[1] == "x")
+			{
+				t |= 1;
+			}
+
 			if(index1 == string::npos || index2 == string::npos)
 			{
-				InsertDataHeader(p,s,TypeDefault(), groupset_list[g].list[i].bytes.size());
+				InsertDataHeader(p,s,t, groupset_list[g].list[i].bytes.size(), SpecificGen());
 			}else{
 				string temp = groupset_list[g].list[i].stream[0].substr(index1+1, index2-index1-1);
 				if(groupset_list[g].list[i].stream[0].find_first_of('|') == string::npos)
 				{
-					InsertDataHeader(p,s,TypeDefault(), groupset_list[g].list[i].bytes.size());
+					InsertDataHeader(p,s,t, groupset_list[g].list[i].bytes.size(), SpecificGen());
 					ErrorMsg(false, groupset_list[g].list[i].group + ":" + groupset_list[g].list[i].id, 0, "Wrong ID property.");
 				}else{
 					vector<string> value = split(temp,'|');
@@ -1077,11 +1091,11 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 					{
 						float threshold = stof(value[0]);
 						float weight = stof(value[1]);
-						InsertDataHeader(p,s,TypeDefault(), groupset_list[g].list[i].bytes.size(),threshold,weight);
+						InsertDataHeader(p,s,t, groupset_list[g].list[i].bytes.size(), SpecificGen(),threshold,weight);
 					}
 					else
 					{
-						InsertDataHeader(p,s,TypeDefault(), groupset_list[g].list[i].bytes.size());
+						InsertDataHeader(p,s,t, groupset_list[g].list[i].bytes.size(), SpecificGen());
 						ErrorMsg(false, groupset_list[g].list[i].group + ":" + groupset_list[g].list[i].id, 0, "Wrong ID property.");
 					}
 					
@@ -1091,7 +1105,7 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 			string address = (string)Path + to_string(p);
 			FILE *stream = fopen(address.c_str(), "r+");
 			if(stream) {
-				long pos = SectorUnit * s + 16;
+				long pos = SectorUnit * s + NeuronHeader;
 				for(size_t a = 0; a < groupset_list[g].list[i].bytes.size(); a++)
 				{
 					ffwrite(stream,pos, groupset_list[g].list[i].bytes[a]);

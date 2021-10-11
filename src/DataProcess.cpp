@@ -2,6 +2,7 @@
 
 #define LOG_ELAPSED_TIME false
 #define LOG_LOAD false
+#define DELAY false
 #define EPSILON 0.001
 #include <chrono>
 #include <thread>
@@ -43,13 +44,16 @@ bool Load(PAGE page, SECTOR sector, Signal* signal, Neuron* previous)
         //----------
         ++pos;
         NUMBER tsize;
-        ffread(stream, pos, tsize);
+        ffread(stream, pos, tsize); // 2byte - size
         struct Neuron *neuron = (Neuron *)malloc(sizeof(struct Neuron) + sizeof(BYTES) * tsize);
         neuron->stream = stream;
         neuron->page = page;
         neuron->sector = sector;
         neuron->type = ttype;
         neuron->count = tsize;
+        ++pos;
+        ffread(stream, pos, neuron->specificity); // 3byte - flag
+        ++pos;
         ++pos;
         long pos_temp = pos; //pos_temp = priority 위치
         pos += 2;
@@ -89,7 +93,7 @@ bool Load(PAGE page, SECTOR sector, Signal* signal, Neuron* previous)
 
         signal->value = value;
 
-        //cout <<  sector  << ":" <<  value << endl;
+        cout <<  sector  << ":" <<  value << endl;
 
         //----------
         // ActiveNeuron 생성
@@ -133,15 +137,17 @@ bool Load(PAGE page, SECTOR sector, Signal* signal, Neuron* previous)
             float effectiveness = ((float) neuron->effective) / ((float) neuron->priority);
             if (effectiveness > (1 - EFFECTIVE_OFFSET) || effectiveness < (1 - EFFECTIVE_OFFSET))
             {
-                cout << "effectiveness : " << effectiveness << endl; //나중에 추가
+                //cout << "effectiveness : " << effectiveness << endl; //나중에 추가
             }
 
-            pos = SectorUnit * neuron->sector + 2;
+            pos = SectorUnit * neuron->sector + Pos_Priority;
             SetZero(stream, pos);
             pos++;
             SetZero(stream, pos);
         }
-
+        #if DELAY
+            this_thread::sleep_for(chrono::milliseconds(10));
+        #endif
         //InsertAddressAuto(neuron, 2);
         if (valid)
         {
@@ -152,7 +158,7 @@ bool Load(PAGE page, SECTOR sector, Signal* signal, Neuron* previous)
 
                 if (ttype >> 1 & 1) //branch가 true일 경우
                 {
-                    long pos = SectorUnit * (neuron->sector) + 16;
+                    long pos = SectorUnit * (neuron->sector) + NeuronHeader;
                     for (int i = 0; i < tsize; i++)
                     {
                         ffread(stream, pos, bytes);
@@ -175,7 +181,7 @@ bool Load(PAGE page, SECTOR sector, Signal* signal, Neuron* previous)
                 }
                 else
                 {
-                    long pos = SectorUnit * (neuron->sector) + 16;
+                    long pos = SectorUnit * (neuron->sector) + NeuronHeader;
                     for (int i = 0; i < tsize; i++)
                     {
                         ffread(stream, pos, bytes);
@@ -195,17 +201,6 @@ bool Load(PAGE page, SECTOR sector, Signal* signal, Neuron* previous)
                             Load(current_page, bytes, signal, neuron);
                         }
                     }
-                }
-            }
-            else if (ttype & 1) //주소가 없는 neuron의 경우
-            {
-                if (ttype >> 1 & 1) //branch가 true일 경우
-                {
-                    Load(page, sector + 1, signal, nullptr);
-                }
-                else
-                {
-                    Load(page, sector + 1, signal, neuron);
                 }
             }
         }
@@ -244,7 +239,7 @@ bool UnloadProcess()
 bool UnloadNeuron(Neuron *neuron)
 {
     FILE* &stream = neuron->stream;
-    long pos = SectorUnit * neuron->sector + 2;
+    long pos = SectorUnit * neuron->sector + Pos_Priority;
     if(neuron->is_effective == 1)
     {
         neuron->priority = UpDownData(stream, pos, false);
@@ -257,7 +252,7 @@ bool UnloadNeuron(Neuron *neuron)
 
     if(neuron->priority == 0) //temp는 현재 뉴런의 temp보다 작거나 같은 경우 0으로 초기화(가장 활성도가 큰 값이 Unload되므로)
     {
-        pos = SectorUnit * neuron->sector+12;
+        pos = SectorUnit * neuron->sector + Pos_Temp;
         float temp = 0;
         ffwrite(stream, pos, temp);
     }

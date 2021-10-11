@@ -1,21 +1,26 @@
 #pragma once
 #include <stdio.h>
 #define SectorCount 65536
-#define SectorSize 1024 //KB
-#define SectorUnit 16 //BYTE
+#define SectorSize 2048 //KB 1024
+#define SectorUnit 32 //BYTE 16
 // (SectorSize) = (SectorCount)*(SectorUnit)
 #define ReadingUnit 4
-#define NeuronHeaderSize 4 //BYTE
-#define NeuronValueSize 12 //BYTE
+#define NeuronHeader 18
+//#define NeuronHeaderSize 4 //BYTE
+//#define NeuronValueSize 12 //BYTE
 #define Path "resource/"
 #define USHORT_MAX 65535
 #define USHORT_TRA 65534 //SECTOR의 경우
 #define USHORT_INPUT 65535 //PAGE의 경우
 #define USHORT_OUTPUT 65534 //PAGE의 경우
 
+#define Pos_Priority 4
+#define Pos_Temp 14
+
 typedef unsigned char BYTE;
 typedef unsigned char BIT;
 typedef unsigned char NUMBER;
+typedef unsigned char FLAG;
 typedef unsigned short COUNT;
 typedef float TIMESTAMP;
 
@@ -48,8 +53,10 @@ struct Neuron
     // 5 bit : 
     // 6 bit : 
     // 7 bit : branch가 true일 경우 previous 무시
-    // 8 bit : true일 경우 바로 다음으로 데이터 전달
+    // 8 bit : 다음 주소로 무조건 전달함 주소 변경 불가
     NUMBER count;// equals to address count(except Header) [per 2bytes]
+    FLAG specificity; // 수용기에 대한 정보
+    BYTE extra; // temp
     NUMBER priority; //통계를 위한 값
     NUMBER effective; //통계를 위한 값 불필요한 경우 향후 struct에서 삭제
     BYTE is_effective;
