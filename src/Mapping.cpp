@@ -4,8 +4,9 @@
 #include <fstream>
 #include <algorithm>
 #include <string>
+#include <chrono>
 
-#define TAG true
+#define TAG false
 #define LOG false
 
 class Group
@@ -75,6 +76,10 @@ const vector<string> methods = {"", "x","i","o"};// 유효 속성값 정의
 string error;
 
 bool Mapping(){
+	
+	std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now(); 
+
 	vector_group.clear();
 	group_name_list.clear();
 	neuron_list.clear();//포인터 해제
@@ -237,6 +242,7 @@ bool Mapping(){
 		return false;
 	}
 	std::cout << error << endl;
+	std::cout << "Time difference = " << std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count() << "[ns]" << std::endl;
     return true;
 }
 
