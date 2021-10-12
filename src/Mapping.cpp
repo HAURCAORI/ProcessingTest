@@ -76,9 +76,8 @@ const vector<string> methods = {"", "x","i","o"};// 유효 속성값 정의
 string error;
 
 bool Mapping(){
-	
+	cout << "=====MAPPING=====" << endl;
 	std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now(); 
 
 	vector_group.clear();
 	group_name_list.clear();
@@ -242,7 +241,9 @@ bool Mapping(){
 		return false;
 	}
 	std::cout << error << endl;
-	std::cout << "Time difference = " << std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count() << "[ns]" << std::endl;
+	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now(); 
+	std::cout << "Time difference = " << std::chrono::duration_cast<std::chrono::milliseconds> (end - begin).count() << "[ms]" << std::endl;
+	cout << "=================" << endl;
     return true;
 }
 
@@ -602,6 +603,7 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 	for(size_t i = 0; i < neuron_list.size(); i++)
 	{
 		int num = (neuron_list[i].estimate / SectorUnit) + 1;
+
 		if (neuron_list[i].group != "INPUT" && neuron_list[i].group != "OUTPUT")
 		{
 			if (neuron_list[i].estimate == NeuronHeader)
@@ -1099,6 +1101,9 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 			BYTE t = TypeDefault();
 			size_t index1 = groupset_list[g].list[i].stream[0].find_first_of('[');
 			size_t index2 = groupset_list[g].list[i].stream[0].find_first_of(']');
+			int num =  groupset_list[g].list[i].bytes.size();
+			if(num > 255)
+				num = 255;
 
 			if(groupset_list[g].list[i].stream[1] == "x")
 			{
@@ -1107,12 +1112,12 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 
 			if(index1 == string::npos || index2 == string::npos)
 			{
-				InsertDataHeader(p,s,t, groupset_list[g].list[i].bytes.size(), SpecificGen());
+				InsertDataHeader(p,s,t, num, SpecificGen());
 			}else{
 				string temp = groupset_list[g].list[i].stream[0].substr(index1+1, index2-index1-1);
 				if(groupset_list[g].list[i].stream[0].find_first_of('|') == string::npos)
 				{
-					InsertDataHeader(p,s,t, groupset_list[g].list[i].bytes.size(), SpecificGen());
+					InsertDataHeader(p,s,t, num, SpecificGen());
 					ErrorMsg(false, groupset_list[g].list[i].group + ":" + groupset_list[g].list[i].id, 0, "Wrong ID property.");
 				}else{
 					vector<string> value = split(temp,'|');
@@ -1129,11 +1134,11 @@ void Processing(const PAGE offset_page, const SECTOR offset_sector){
 							weight = stof(value[1]);
 						else
 							weight = random_weight();
-						InsertDataHeader(p,s,t, groupset_list[g].list[i].bytes.size(), SpecificGen(),threshold,weight);
+						InsertDataHeader(p,s,t, num, SpecificGen(),threshold,weight);
 					}
 					else
 					{
-						InsertDataHeader(p,s,t, groupset_list[g].list[i].bytes.size(), SpecificGen());
+						InsertDataHeader(p,s,t, num, SpecificGen());
 						ErrorMsg(false, groupset_list[g].list[i].group + ":" + groupset_list[g].list[i].id, 0, "Wrong ID property.");
 					}
 					

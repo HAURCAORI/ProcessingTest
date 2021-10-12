@@ -20,7 +20,6 @@ bool Load(PAGE page, SECTOR sector, Signal* signal, Neuron* previous)
 {
     #if LOG_ELAPSED_TIME
         std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-        std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now(); 
     #endif
 
     #if LOG_LOAD
@@ -168,46 +167,92 @@ bool Load(PAGE page, SECTOR sector, Signal* signal, Neuron* previous)
                 if (ttype >> 1 & 1) //branch가 true일 경우
                 {
                     long pos_address = SectorUnit * (neuron->sector) + NeuronHeader;
-                    for (int i = 0; i < tsize; i++)
+                    if (tsize != 255)
                     {
-                        ffread(stream, pos_address, bytes);
-                        pos_address += 2;
-                        if (bytes == USHORT_MAX)
-                        {
-                            break;
-                        }
-                        else if (bytes == USHORT_TRA)
+                        for (int i = 0; i < tsize; i++)
                         {
                             ffread(stream, pos_address, bytes);
                             pos_address += 2;
-                            current_page = bytes;
+                            if (bytes == USHORT_MAX)
+                            {
+                                break;
+                            }
+                            else if (bytes == USHORT_TRA)
+                            {
+                                ffread(stream, pos_address, bytes);
+                                pos_address += 2;
+                                current_page = bytes;
+                            }
+                            else
+                            {
+                                Load(current_page, bytes, signal, nullptr);
+                            }
                         }
-                        else
+                    }else{
+                        while(true)
                         {
-                            Load(current_page, bytes, signal, nullptr);
+                            ffread(stream, pos_address, bytes);
+                            pos_address += 2;
+                            if (bytes == USHORT_MAX)
+                            {
+                                break;
+                            }
+                            else if (bytes == USHORT_TRA)
+                            {
+                                ffread(stream, pos_address, bytes);
+                                pos_address += 2;
+                                current_page = bytes;
+                            }
+                            else
+                            {
+                                Load(current_page, bytes, signal, nullptr);
+                            }
                         }
                     }
                 }
                 else
                 {
                     long pos_address = SectorUnit * (neuron->sector) + NeuronHeader;
-                    for (int i = 0; i < tsize; i++)
+                    if (tsize != 255)
                     {
-                        ffread(stream, pos_address, bytes);
-                        pos_address += 2;
-                        if (bytes == USHORT_MAX)
-                        {
-                            break;
-                        }
-                        else if (bytes == USHORT_TRA)
+                        for (int i = 0; i < tsize; i++)
                         {
                             ffread(stream, pos_address, bytes);
-                            pos += 2;
-                            current_page = bytes;
+                            pos_address += 2;
+                            if (bytes == USHORT_MAX)
+                            {
+                                break;
+                            }
+                            else if (bytes == USHORT_TRA)
+                            {
+                                ffread(stream, pos_address, bytes);
+                                pos += 2;
+                                current_page = bytes;
+                            }
+                            else
+                            {
+                                Load(current_page, bytes, signal, neuron);
+                            }
                         }
-                        else
+                    }else{
+                        while(true)
                         {
-                            Load(current_page, bytes, signal, neuron);
+                            ffread(stream, pos_address, bytes);
+                            pos_address += 2;
+                            if (bytes == USHORT_MAX)
+                            {
+                                break;
+                            }
+                            else if (bytes == USHORT_TRA)
+                            {
+                                ffread(stream, pos_address, bytes);
+                                pos_address += 2;
+                                current_page = bytes;
+                            }
+                            else
+                            {
+                                Load(current_page, bytes, signal, neuron);
+                            }
                         }
                     }
                 }
@@ -215,7 +260,8 @@ bool Load(PAGE page, SECTOR sector, Signal* signal, Neuron* previous)
         }
 
         #if LOG_ELAPSED_TIME
-            std::cout << "Time difference = " << std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count() << "[ns]" << std::endl;
+            std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now(); 
+            std::cout << "Time difference = " << std::chrono::duration_cast<std::chrono::microseconds> (end - begin).count() << "[microseconds]" << std::endl;
         #endif
 
         return true;

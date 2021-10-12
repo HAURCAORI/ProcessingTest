@@ -30,10 +30,14 @@ int main()
     string image = "resource/train-images.idx3-ubyte";
     string label = "resource/train-labels.idx1-ubyte";
     //read_mnist(image.c_str(),label.c_str());
-    
+
+    Mapping();
+    Initialize();
+    InputLoad(0, random_float());
+    /*
     if (Mapping())
     {
-        /*
+        
         Initialize();
         thread([&] {
             while (true)
@@ -50,13 +54,13 @@ int main()
         {
             cin >> selection;
         } while (selection != 0);
-        */
+        
     }
     else
     {
         cout << "fail....." << endl;
     }
-    
+    */
 
 
     //CreateEmptyFile(0);
